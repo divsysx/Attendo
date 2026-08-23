@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup and device-to-device transfer rules for API 31+.
+
+  Both destinations carry the write-ahead log alongside the database; see backup_rules.xml
+  for why, and AppContainer.checkpoint for the other half of it.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="attendo.db" />
+        <include domain="database" path="attendo.db-wal" />
+        <include domain="sharedpref" path="attendo-settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="attendo.db" />
+        <include domain="database" path="attendo.db-wal" />
+        <include domain="sharedpref" path="attendo-settings.xml" />
+    </device-transfer>
+</data-extraction-rules>

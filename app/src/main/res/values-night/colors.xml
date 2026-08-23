@@ -1,0 +1,4 @@
+<resources>
+    <!-- Matches the dark Compose surface in ui/theme/Color.kt. -->
+    <color name="window_background">#FF141112</color>
+</resources>

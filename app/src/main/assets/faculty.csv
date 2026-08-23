@@ -1,0 +1,48 @@
+# Faculty acronyms — Faculty of Technology, University of Delhi (2026-27)
+# code,name
+# Collected from the per-page keys of Timetable.pdf. A cell like "[AKT / SG]" names two
+# teachers; the timetable CSV keeps the pair as printed and this file resolves each half.
+code,name
+AKG,Dr. Ajay Kumar Gupta
+AKS,Mr. Ajay Kumar Sahu
+AKT,Prof. A.K. Tandon
+ANJ,Dr. Anuj
+AP,Dr. Ashutosh Pandey
+ART,Dr. Anuradha Tomar
+AT,Dr. Arjun Tyagi
+AZK,Dr. Ahmad Zaman Khan
+BA,Prof. Bhawna Agrawal
+BR,Dr. Bhawna Rawat
+DP,Dr. Deepika
+DRB,Prof. D.R. Bhaskar
+DRS,Dr. Diptiranjan Samantray
+EKL,Dr. Eklavya
+GB,Dr. Geetanjali Bhola
+GS,Dr. Gurinder Singh
+GSC,Prof. G.S. Chilana
+JJ,Dr. Juhi Jain
+JP,Dr. Jeetendra Prasad
+JS,Dr. Jatin Sharma
+KJ,Dr. Kajal Kumari
+KS,Dr. Khushwant Sehra
+MV,Dr. Manu Vardhan
+PKS,Prof. P.K. Singh
+PT,Dr. Pratima
+RHS,Dr. Rahul Solanki
+RJS,Dr. Ranjeet Singh
+RR,Dr. Rekha R
+RS,Prof. Raj Senani
+SG,Dr. Shubham Gupta
+SJY,Dr. Sanjeev Yadav
+SK,Dr. Sunil Kumar
+SNK,Ms. Shivani Kumari
+SW,Dr. Sweta Rani
+SY,Dr. Sangeeta Yadav
+UDS,Dr. Udita Sharma
+UJS,Dr. Ujjal Sur
+UK,Dr. Utkarsh
+US,Mr. Unmesh Shukla
+VA,Dr. Vijay Azad
+VJ,Prof. Vanita Jain
+VK,Dr. Vandana Kumari
+VS,Dr. Varun Saxena

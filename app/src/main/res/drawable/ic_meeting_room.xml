@@ -1,0 +1,15 @@
+<!--
+  Material Icons "meeting_room", filled, 24dp.
+  Google Material Design icons, Apache License 2.0. Path data copied verbatim from
+  material-design-icons/src/places/meeting_room/materialicons/24px.svg.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FF000000">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M14 6v15H3v-2h2V3h9v1h5v15h2v2h-4V6h-3zm-4 5v2h2v-2h-2z" />
+</vector>

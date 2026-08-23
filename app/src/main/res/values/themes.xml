@@ -1,0 +1,17 @@
+<resources>
+    <!--
+      The UI is entirely Compose, so this theme only has to get the window right
+      before the first frame: no action bar, and a background that matches the
+      Compose surface so launching does not flash the wrong colour.
+
+      Parent is a *platform* theme rather than a Material Components one because the
+      app does not depend on the Material XML library — only on Compose Material 3.
+      values-night/ carries the dark counterpart.
+    -->
+    <style name="Theme.Attendo" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

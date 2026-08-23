@@ -1,0 +1,28 @@
+# Signing secrets — must never be committed.
+# `keystore.properties` holds the release keystore path and its passwords.
+keystore.properties
+
+# Keystores, in case one is ever placed inside the tree by mistake.
+# Attendo's real release keystore lives outside this repository.
+*.p12
+*.jks
+*.keystore
+
+# Local Android/Gradle configuration — machine-specific SDK path, not portable.
+local.properties
+
+# Local settings — machine-specific permission allowlists and per-user paths.
+settings.local.json
+
+# Build outputs — generated artifacts (APKs, intermediates, reports), not source.
+build/
+**/build/
+
+# Gradle caches and daemon state — machine-local.
+.gradle/
+
+# Kotlin local/cache state — machine-local.
+.kotlin/
+
+# macOS Finder metadata.
+.DS_Store

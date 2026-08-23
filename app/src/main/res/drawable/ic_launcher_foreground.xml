@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive-icon foreground: 108x108dp with the outer 18dp reserved for masking, so
+  everything meaningful sits inside the 72dp safe zone.
+
+  The mark is a tick over three ruled lines — the one-tap-a-day review, which is the
+  thing the app is for.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M32,44 h20"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeAlpha="0.55"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M32,56 h14"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeAlpha="0.55"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M32,68 h10"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeAlpha="0.55"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M46,62 l12,12 l22,-30"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

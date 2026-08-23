@@ -1,0 +1,606 @@
+# Faculty of Technology, University of Delhi — room timetable
+# Academic Session 2026-27, w.e.f. 28th July 2026
+#
+# Transcribed from Timetable.pdf (22 section timetables). One row per printed cell:
+#   day,start,units,room,subject,section,faculty,kind,batch
+# `start` is the slot's start hour, `units` its length in hours (a 2-hour block is
+# one row with units=2, not two rows). `kind` is L / P / T.
+#
+# Every cell on every page is transcribed, including the ones printed without a room
+# in brackets — SFL (Sports for Life / Fit India). Those leave `room` empty: they are
+# classes the section attends, so they must be here for course seeding, but they
+# occupy no room and the Rooms screens skip them. An empty `room` is the only way to
+# say that; naming a room they do not use would book a room that is actually free.
+#
+# A class attended by more than one cohort (a 3rd-year elective, a joint EE
+# workshop) appears once per cohort. That is not a clash: the Rooms screen groups
+# identical bookings and lists the cohorts together.
+#
+# To update for a new semester: replace this file, keeping the column order.
+day,start,units,room,subject,section,faculty,kind,batch
+
+# ---- 1st Year EE-A ----------------------------------------------------------
+Mon,9,2,212,EW,1st Yr EE-A,JP,L,A2
+Mon,11,2,212,EW,1st Yr EE-A,AKS,L,A2
+Mon,9,2,312,FCP,1st Yr EE-A,RR,P,A1
+Mon,11,2,211,IEEE,1st Yr EE-A,ART,P,A1
+Mon,16,1,213,M-1,1st Yr EE-A,AP,L,
+Mon,17,1,203,FCP,1st Yr EE-A,RR,L,
+Tue,9,2,214,HBT,1st Yr EE-A,PT,L,
+Tue,13,1,213,IEEE,1st Yr EE-A,AT,L,
+Tue,16,2,213,FCP,1st Yr EE-A,RR,L,
+Wed,9,2,204,M-1,1st Yr EE-A,AP,L,
+Wed,14,4,212,EW,1st Yr EE-A,AKS,L,A1
+Wed,14,2,211,IEEE,1st Yr EE-A,ART,P,A2
+Wed,16,2,312,FCP,1st Yr EE-A,RR,P,A2
+Thu,9,1,211,M-1,1st Yr EE-A,AP,T,A1
+Thu,10,1,211,M-1,1st Yr EE-A,AP,T,A2
+Fri,9,2,213,IEEE,1st Yr EE-A,AT,L,
+
+# ---- 1st Year EE-B ----------------------------------------------------------
+Mon,9,2,203,FCP,1st Yr EE-B,GB,L,
+Mon,12,1,317,M-1,1st Yr EE-B,AP,T,B1
+Mon,13,1,317,M-1,1st Yr EE-B,AP,T,B2
+Mon,15,1,204,M-1,1st Yr EE-B,AP,L,
+Mon,16,2,204,HBT,1st Yr EE-B,VA,L,
+Tue,9,4,212,EW,1st Yr EE-B,DP,L,B2
+Tue,9,2,312,FCP,1st Yr EE-B,GB,P,B1
+Tue,11,2,304,PHY,1st Yr EE-B,VK,P,B1
+Tue,14,1,203,FCP,1st Yr EE-B,GB,L,
+Tue,15,1,203,PHY,1st Yr EE-B,KJ,L,
+Wed,16,2,203,PHY,1st Yr EE-B,VK,L,
+Thu,14,4,212,EW,1st Yr EE-B,RJS,L,B1
+Thu,14,2,312,FCP,1st Yr EE-B,GB,P,B2
+Thu,16,2,304,PHY,1st Yr EE-B,VK,P,B2
+Fri,13,2,203,M-1,1st Yr EE-B,AP,L,
+
+# ---- 1st Year ECE-A ---------------------------------------------------------
+Mon,16,1,203,FCP,1st Yr ECE-A,RR,L,
+Tue,11,2,311,ECW,1st Yr ECE-A,VJ / SJY,L,A2
+Tue,11,2,211,IEEE,1st Yr ECE-A,KJ,P,A1
+Tue,13,1,317,M-1,1st Yr ECE-A,RHS,T,A1
+Tue,14,1,317,M-1,1st Yr ECE-A,RHS,T,A2
+Wed,9,2,213,M-1,1st Yr ECE-A,ANJ,L,
+Wed,14,2,311,ECW,1st Yr ECE-A,VJ / SJY,L,A2
+Wed,14,2,312,FCP,1st Yr ECE-A,RR,P,A1
+Wed,16,2,213,HBT,1st Yr ECE-A,VA,L,
+Thu,9,2,314,IEEE,1st Yr ECE-A,AT,L,
+Thu,13,1,213,M-1,1st Yr ECE-A,ANJ,L,
+Thu,14,4,311,ECW,1st Yr ECE-A,SJY,L,A1
+Thu,14,2,211,IEEE,1st Yr ECE-A,KJ,P,A2
+Thu,16,2,312,FCP,1st Yr ECE-A,RR,P,A2
+Fri,13,1,213,IEEE,1st Yr ECE-A,AT,L,
+Fri,14,2,214,FCP,1st Yr ECE-A,RR,L,
+
+# ---- 1st Year ECE-B ---------------------------------------------------------
+Mon,9,2,213,PHY,1st Yr ECE-B,KJ,L,
+Tue,9,2,314,FCP,1st Yr ECE-B,SY,L,
+Wed,9,2,311,ECW,1st Yr ECE-B,DRS,L,B1
+Wed,9,2,312,FCP,1st Yr ECE-B,BR,P,B2
+Wed,11,2,311,ECW,1st Yr ECE-B,AKG,L,B1
+Wed,11,2,304,PHY,1st Yr ECE-B,KJ,P,B2
+Wed,13,1,214,FCP,1st Yr ECE-B,SY,L,
+Wed,14,1,217,M-1,1st Yr ECE-B,AP,T,B1
+Wed,15,1,217,M-1,1st Yr ECE-B,AP,T,B2
+Thu,9,2,311,ECW,1st Yr ECE-B,SW,L,B2
+Thu,9,2,312,FCP,1st Yr ECE-B,BR,P,B1
+Thu,11,2,311,ECW,1st Yr ECE-B,GS,L,B2
+Thu,11,2,304,PHY,1st Yr ECE-B,KJ,P,B1
+Thu,14,2,214,M-1,1st Yr ECE-B,AP,L,
+Fri,12,1,214,M-1,1st Yr ECE-B,AP,L,
+Fri,13,1,214,PHY,1st Yr ECE-B,KJ,L,
+Fri,16,2,214,HBT,1st Yr ECE-B,VA,L,
+
+# ---- 1st Year CSE-A ---------------------------------------------------------
+Mon,9,2,214,M-1,1st Yr CSE-A,ANJ,L,
+Mon,13,1,313,M-1,1st Yr CSE-A,ANJ,T,A1
+Tue,13,1,314,FCP,1st Yr CSE-A,US,L,
+Tue,16,1,203,M-1,1st Yr CSE-A,ANJ,L,
+Tue,17,1,217,M-1,1st Yr CSE-A,ANJ,T,A2
+Wed,9,2,214,IEEE,1st Yr CSE-A,KJ,L,
+Wed,16,2,314,FCP,1st Yr CSE-A,US,L,
+Thu,9,2,203,HBT,1st Yr CSE-A,PT,L,
+Thu,13,1,314,IEEE,1st Yr CSE-A,KJ,L,
+Thu,14,4,217,CW,1st Yr CSE-A,JS,L,A2
+Fri,9,4,217,CW,1st Yr CSE-A,UK,L,A1
+Fri,9,2,211,IEEE,1st Yr CSE-A,KJ,P,A2
+Fri,11,2,312,FCP,1st Yr CSE-A,US,P,A2
+Fri,14,2,211,IEEE,1st Yr CSE-A,KJ,P,A1
+Fri,16,2,312,FCP,1st Yr CSE-A,US,P,A1
+
+# ---- 1st Year CSE-B ---------------------------------------------------------
+Mon,11,2,313,PHY,1st Yr CSE-B,VK,L,
+Mon,14,2,304,PHY,1st Yr CSE-B,VK,P,B1
+Mon,16,2,312,FCP,1st Yr CSE-B,UK,P,B1
+Tue,9,2,213,HBT,1st Yr CSE-B,PT,L,
+Tue,13,1,214,M-1,1st Yr CSE-B,ANJ,L,
+Tue,16,2,312,FCP,1st Yr CSE-B,UK,P,B2
+Wed,11,2,217,CW,1st Yr CSE-B,MV,L,B1
+Wed,14,2,304,PHY,1st Yr CSE-B,VK,P,B2
+Wed,16,2,217,CW,1st Yr CSE-B,MV,L,B1
+Thu,13,1,214,PHY,1st Yr CSE-B,VK,L,
+Thu,14,2,213,FCP,1st Yr CSE-B,UK,L,
+Thu,16,1,317,M-1,1st Yr CSE-B,ANJ,T,B1
+Thu,17,1,317,M-1,1st Yr CSE-B,ANJ,T,B2
+Fri,9,2,314,M-1,1st Yr CSE-B,ANJ,L,
+Fri,13,1,313,FCP,1st Yr CSE-B,UK,L,
+Fri,14,4,217,CW,1st Yr CSE-B,MV,L,B2
+
+# ---- 2nd Year EE-A ----------------------------------------------------------
+Mon,9,2,314,EVS-2,2nd Yr EE-A,UDS,L,
+Mon,11,2,204,ADEC,2nd Yr EE-A,GS,L,
+Mon,14,4,212,AEW-I,2nd Yr EE-A,AKT / AT,L,B1
+Tue,10,1,203,VLSI,2nd Yr EE-A,SW,L,
+Tue,11,2,204,EM-I,2nd Yr EE-A,SG,L,
+Tue,14,2,204,IEHV,2nd Yr EE-A,ART,L,
+Tue,14,2,Basement Lab,FSS,2nd Yr EE-A,AKS,L,
+Tue,14,2,312,VLSI,2nd Yr EE-A,SW,P,
+Tue,16,2,317,ADEC,2nd Yr EE-A,GS,P,A1
+Tue,16,2,Basement Lab,EM-I,2nd Yr EE-A,AKT/SG,P,A2
+Wed,9,2,R2,PSCS-B,2nd Yr EE-A,AZK,L,
+Wed,11,2,317,ADEC,2nd Yr EE-A,GS,P,A2
+Wed,11,2,211,ENA,2nd Yr EE-A,JP,P,A1
+Wed,14,1,203,ADEC,2nd Yr EE-A,GS,L,
+Wed,15,2,,SFL,2nd Yr EE-A,RHS,L,
+Thu,9,2,R2,PSCS,2nd Yr EE-A,AZK,P,B3
+Thu,11,2,203,ENA,2nd Yr EE-A,DP,L,
+Thu,13,1,R2,PSCS-B,2nd Yr EE-A,AZK,L,
+Thu,14,1,204,IEHV,2nd Yr EE-A,ART,L,
+Thu,14,1,Basement Lab,FSS,2nd Yr EE-A,AKS,L,
+Thu,14,2,203,VLSI,2nd Yr EE-A,SW,L,
+Thu,15,1,204,IEHV,2nd Yr EE-A,ART,T,
+Thu,15,1,Basement Lab,FSS,2nd Yr EE-A,AKS,T,
+Thu,16,2,Basement Lab,EM-I,2nd Yr EE-A,AKT/SG,P,A1
+Thu,16,2,211,ENA,2nd Yr EE-A,DP,P,A2
+Fri,11,1,204,EM-I,2nd Yr EE-A,SG,L,
+Fri,12,1,204,ENA,2nd Yr EE-A,DP,L,
+Fri,14,4,212,AEW-I,2nd Yr EE-A,AKT / UJS,L,B2
+
+# ---- 2nd Year EE-B ----------------------------------------------------------
+Mon,9,2,R2,PSCS-A,2nd Yr EE-B,AZK,L,
+Mon,11,1,203,EM-I,2nd Yr EE-B,UJS,L,
+Mon,12,1,203,ENA,2nd Yr EE-B,JP,L,
+Mon,14,4,212,AEW-I,2nd Yr EE-B,AKT / AT,L,B1
+Tue,9,1,R2,PSCS-A,2nd Yr EE-B,AZK,L,
+Tue,10,1,203,VLSI,2nd Yr EE-B,SW,L,
+Tue,11,2,Basement Lab,EM-I,2nd Yr EE-B,AKT/UJS,P,B2
+Tue,11,2,317,ADEC,2nd Yr EE-B,DRS,P,B1
+Tue,14,2,204,IEHV,2nd Yr EE-B,ART,L,
+Tue,14,2,Basement Lab,FSS,2nd Yr EE-B,AKS,L,
+Tue,14,2,312,VLSI,2nd Yr EE-B,SW,P,
+Tue,16,2,204,ADEC,2nd Yr EE-B,DRS,L,
+Wed,11,2,203,EM-I,2nd Yr EE-B,UJS,L,
+Wed,14,1,204,ADEC,2nd Yr EE-B,DRS,L,
+Wed,15,2,,SFL,2nd Yr EE-B,RHS,L,
+Thu,9,2,213,EVS-2,2nd Yr EE-B,UDS,L,
+Thu,11,2,Basement Lab,EM-I,2nd Yr EE-B,AKT/SG,P,B1
+Thu,11,2,211,ENA,2nd Yr EE-B,JP,P,B2
+Thu,14,1,204,IEHV,2nd Yr EE-B,ART,L,
+Thu,14,1,Basement Lab,FSS,2nd Yr EE-B,AKS,L,
+Thu,14,2,203,VLSI,2nd Yr EE-B,SW,L,
+Thu,15,1,204,IEHV,2nd Yr EE-B,ART,T,
+Thu,15,1,Basement Lab,FSS,2nd Yr EE-B,AKS,T,
+Thu,16,2,204,ENA,2nd Yr EE-B,JP,L,
+Fri,9,2,R2,PSCS,2nd Yr EE-B,AZK,P,B4
+Fri,11,2,317,ADEC,2nd Yr EE-B,DRS,P,B2
+Fri,11,2,211,ENA,2nd Yr EE-B,JP,P,B1
+Fri,14,4,212,AEW-I,2nd Yr EE-B,AKT / UJS,L,B2
+
+# ---- 2nd Year ECE-A ---------------------------------------------------------
+Mon,11,2,213,EDC,2nd Yr ECE-A,DRS,L,
+Mon,14,2,317,DE-1,2nd Yr ECE-A,BA,P,A1
+Mon,14,2,303,NAS,2nd Yr ECE-A,SW,P,A2
+Mon,16,2,311,EDC,2nd Yr ECE-A,DRS,P,A1
+Mon,16,2,317,DE-1,2nd Yr ECE-A,BA,P,A2
+Tue,10,1,203,VLSI,2nd Yr ECE-A,SW,L,
+Tue,14,2,204,IEHV,2nd Yr ECE-A,ART,L,
+Tue,14,2,312,VLSI,2nd Yr ECE-A,SW,P,
+Tue,16,2,313,EVS-2,2nd Yr ECE-A,EKL,L,
+Wed,9,2,R2,PSCS-B,2nd Yr ECE-A,AZK,L,
+Wed,11,1,213,NAS,2nd Yr ECE-A,DRB,L,
+Wed,13,2,213,DE-1,2nd Yr ECE-A,BA,L,
+Wed,15,2,,SFL,2nd Yr ECE-A,ANJ,L,
+Thu,9,2,R2,PSCS,2nd Yr ECE-A,AZK,P,B3
+Thu,11,1,213,NAS,2nd Yr ECE-A,DRB,L,
+Thu,12,1,213,DE-1,2nd Yr ECE-A,BA,L,
+Thu,13,1,R2,PSCS-B,2nd Yr ECE-A,AZK,L,
+Thu,14,1,204,IEHV,2nd Yr ECE-A,ART,L,
+Thu,14,2,203,VLSI,2nd Yr ECE-A,SW,L,
+Thu,15,1,204,IEHV,2nd Yr ECE-A,ART,T,
+Thu,16,1,213,EDC,2nd Yr ECE-A,DRS,L,
+Fri,11,1,213,NAS,2nd Yr ECE-A,DRB,L,
+Fri,14,2,303,NAS,2nd Yr ECE-A,DRB,P,A1
+Fri,14,2,311,EDC,2nd Yr ECE-A,DRS,P,A2
+
+# ---- 2nd Year ECE-B ---------------------------------------------------------
+Mon,9,2,R2,PSCS-A,2nd Yr ECE-B,AZK,L,
+Mon,13,2,204,DE-1,2nd Yr ECE-B,PKS,L,
+Mon,15,2,,SFL,2nd Yr ECE-B,ANJ,L,
+Tue,9,1,R2,PSCS-A,2nd Yr ECE-B,AZK,L,
+Tue,10,1,203,VLSI,2nd Yr ECE-B,SW,L,
+Tue,11,2,203,EDC,2nd Yr ECE-B,BA,L,
+Tue,14,2,Basement Lab,FSS,2nd Yr ECE-B,AKS,L,
+Tue,14,2,312,VLSI,2nd Yr ECE-B,SW,P,
+Wed,11,1,313,DE-1,2nd Yr ECE-B,PKS,L,
+Wed,12,1,313,NAS,2nd Yr ECE-B,SW,L,
+Wed,14,2,317,DE-1,2nd Yr ECE-B,PKS,P,B1
+Wed,14,2,303,NAS,2nd Yr ECE-B,SW,P,B2
+Wed,16,2,204,EVS-2,2nd Yr ECE-B,EKL,L,
+Thu,11,2,317,DE-1,2nd Yr ECE-B,PKS,P,B2
+Thu,13,1,203,EDC,2nd Yr ECE-B,BA,L,
+Thu,14,1,Basement Lab,FSS,2nd Yr ECE-B,AKS,L,
+Thu,14,2,203,VLSI,2nd Yr ECE-B,SW,L,
+Thu,15,1,Basement Lab,FSS,2nd Yr ECE-B,AKS,T,
+Fri,9,2,R2,PSCS,2nd Yr ECE-B,AZK,P,B4
+Fri,11,2,303,NAS,2nd Yr ECE-B,SW,P,B1
+Fri,11,2,311,EDC,2nd Yr ECE-B,BA,P,B2
+Fri,14,2,204,NAS,2nd Yr ECE-B,SW,L,
+Fri,16,2,311,EDC,2nd Yr ECE-B,BA,P,B1
+
+# ---- 2nd Year CSE-A ---------------------------------------------------------
+Mon,9,2,R2,PSCS-A,2nd Yr CSE-A,AZK,L,
+Mon,11,2,R2,ADA,2nd Yr CSE-A,JJ,L,
+Mon,14,2,R3,ADA,2nd Yr CSE-A,JJ,P,A1
+Mon,14,2,R4,DBMS,2nd Yr CSE-A,GB,P,A2
+Mon,16,2,R2,PSCS,2nd Yr CSE-A,AZK,P,B1
+Tue,9,1,R2,PSCS-A,2nd Yr CSE-A,AZK,L,
+Tue,11,2,R1,DBMS,2nd Yr CSE-A,GB,L,
+Tue,15,2,,SFL,2nd Yr CSE-A,AP,L,
+Wed,9,2,314,EVS-2,2nd Yr CSE-A,UDS,L,
+Wed,11,2,R2,DSD,2nd Yr CSE-A,BR,L,
+Wed,14,2,R4,DSD,2nd Yr CSE-A,BR,P,A2
+Wed,14,2,R4,DBMS,2nd Yr CSE-A,GB,P,A1
+Thu,11,1,R1,DBMS,2nd Yr CSE-A,GB,L,
+Thu,12,1,R1,DSD,2nd Yr CSE-A,BR,L,
+Fri,11,2,R4,DSD,2nd Yr CSE-A,BR,P,A1
+Fri,11,2,R3,ADA,2nd Yr CSE-A,JJ,P,A2
+Fri,13,1,R2,ADA,2nd Yr CSE-A,JJ,L,
+
+# ---- 2nd Year CSE-B ---------------------------------------------------------
+Mon,11,2,R3,DBMS,2nd Yr CSE-B,GB,P,B1
+Mon,11,2,R4,DSD,2nd Yr CSE-B,BR,P,B2
+Mon,14,2,R2,DSD,2nd Yr CSE-B,BR,L,
+Mon,16,2,313,EVS-2,2nd Yr CSE-B,EKL,L,
+Tue,11,2,R3,DSD,2nd Yr CSE-B,BR,P,B1
+Tue,11,2,R4,ADA,2nd Yr CSE-B,JJ,P,B2
+Tue,13,1,R2,ADA,2nd Yr CSE-B,JJ,L,
+Tue,16,2,R2,PSCS,2nd Yr CSE-B,AZK,P,B2
+Wed,9,2,R2,PSCS-B,2nd Yr CSE-B,AZK,L,
+Wed,11,2,R3,DBMS,2nd Yr CSE-B,GB,P,B2
+Wed,11,2,R4,ADA,2nd Yr CSE-B,JJ,P,B1
+Wed,14,2,R1,ADA,2nd Yr CSE-B,JJ,L,
+Thu,11,1,R2,DSD,2nd Yr CSE-B,BR,L,
+Thu,12,1,R2,DBMS,2nd Yr CSE-B,GB,L,
+Thu,13,1,R2,PSCS-B,2nd Yr CSE-B,AZK,L,
+Thu,15,2,,SFL,2nd Yr CSE-B,AZK,L,
+Fri,11,2,R2,DBMS,2nd Yr CSE-B,GB,L,
+
+# ---- 3rd Year EE ------------------------------------------------------------
+Mon,9,2,313,NN-B,3rd Yr EE,US,P,B2
+Mon,11,2,312,PSA,3rd Yr EE,AT,L,
+Mon,14,2,312,CS,3rd Yr EE,RJS,P,B2
+Mon,14,2,219,EMFT,3rd Yr EE,UJS,P,B1
+Tue,9,2,204,AVLSI,3rd Yr EE,VK,L,
+Tue,11,2,303,PSA,3rd Yr EE,AT,P,B1
+Tue,11,2,219,EMFT,3rd Yr EE,UJS,P,B2
+Tue,13,1,203,DMW,3rd Yr EE,JS,L,
+Tue,14,2,213,CS,3rd Yr EE,RJS,L,
+Tue,17,1,214,NN-B,3rd Yr EE,US,L,
+Wed,9,2,313,NN-B,3rd Yr EE,US,P,B1
+Wed,11,2,303,PSA,3rd Yr EE,AT,P,B2
+Wed,11,2,312,CS,3rd Yr EE,RJS,P,B1
+Wed,13,1,313,DMW,3rd Yr EE,JS,T,
+Wed,14,1,Basement Lab,CS,3rd Yr EE,RJS,L,
+Wed,15,1,203,EMFT,3rd Yr EE,UJS,L,
+Wed,16,2,313,DIP-B,3rd Yr EE,GS,L,
+Wed,16,2,214,ECA,3rd Yr EE,RJS,L,
+Thu,9,1,204,AVLSI,3rd Yr EE,VK,L,
+Thu,10,1,313,DIP-B,3rd Yr EE,GS,L,
+Thu,10,1,214,ECA,3rd Yr EE,RJS,L,
+Thu,11,2,313,EMFT,3rd Yr EE,UJS,L,
+Thu,14,1,313,PSA,3rd Yr EE,AT,L,
+Thu,16,2,214,NN-B,3rd Yr EE,US,L,
+Fri,9,2,303,AVLSI,3rd Yr EE,VK,P,
+Fri,9,2,313,DMW,3rd Yr EE,JS,L,
+Fri,13,1,314,ECA,3rd Yr EE,RJS,T,A2
+Fri,16,2,317,DIP-B,3rd Yr EE,GS,P,B2
+
+# ---- 3rd Year ECE-A ---------------------------------------------------------
+Mon,9,2,313,NN-B,3rd Yr ECE-A,US,P,B2
+Mon,11,2,311,ACS,3rd Yr ECE-A,GSC,P,A2
+Mon,11,2,217,DSP,3rd Yr ECE-A,VS,P,A1
+Mon,14,2,311,ACS,3rd Yr ECE-A,GSC,P,A1
+Mon,14,2,217,CTRLS,3rd Yr ECE-A,DP,P,A2
+Mon,16,2,R1,EH,3rd Yr ECE-A,SK,P,B1
+Tue,9,2,204,AVLSI,3rd Yr ECE-A,VK,L,
+Tue,11,2,213,ACS,3rd Yr ECE-A,GSC,L,
+Tue,14,2,217,CTRLS,3rd Yr ECE-A,DP,P,A1
+Tue,14,2,211,DSP,3rd Yr ECE-A,VS,P,A2
+Tue,17,1,214,NN-B,3rd Yr ECE-A,US,L,
+Wed,9,2,313,NN-B,3rd Yr ECE-A,US,P,B1
+Wed,11,2,314,DSP,3rd Yr ECE-A,VS,L,
+Wed,13,1,R1,EH,3rd Yr ECE-A,SK,L,
+Wed,14,2,214,CTRLS,3rd Yr ECE-A,DP,L,
+Wed,16,2,313,DIP-B,3rd Yr ECE-A,GS,L,
+Thu,9,1,204,AVLSI,3rd Yr ECE-A,VK,L,
+Thu,10,1,313,DIP-B,3rd Yr ECE-A,GS,L,
+Thu,11,1,204,DSP,3rd Yr ECE-A,VS,L,
+Thu,14,2,317,DIP-B,3rd Yr ECE-A,GS,P,B1
+Thu,16,2,214,NN-B,3rd Yr ECE-A,US,L,
+Fri,9,2,303,AVLSI,3rd Yr ECE-A,VK,P,
+Fri,9,2,R1,EH,3rd Yr ECE-A,SK,L,
+Fri,11,1,214,CTRLS,3rd Yr ECE-A,DP,L,
+Fri,12,1,213,ACS,3rd Yr ECE-A,GSC,L,
+Fri,14,2,R1,EH,3rd Yr ECE-A,SK,P,B2
+
+# ---- 3rd Year ECE-B ---------------------------------------------------------
+Mon,9,2,313,NN-B,3rd Yr ECE-B,US,P,B2
+Mon,11,2,214,DSP,3rd Yr ECE-B,AKG,L,
+Mon,13,1,314,ACS,3rd Yr ECE-B,VS,L,
+Mon,16,2,R1,EH,3rd Yr ECE-B,SK,P,B1
+Tue,9,2,204,AVLSI,3rd Yr ECE-B,VK,L,
+Tue,11,2,217,DSP,3rd Yr ECE-B,AKG,P,B1
+Tue,11,2,312,ACS,3rd Yr ECE-B,VS,P,B2
+Tue,13,1,203,DMW,3rd Yr ECE-B,JS,L,
+Tue,14,2,303,CTRLS,3rd Yr ECE-B,VJ,P,B1
+Tue,14,2,219,DSP,3rd Yr ECE-B,AKG,P,B2
+Tue,17,1,214,NN-B,3rd Yr ECE-B,US,L,
+Wed,9,2,313,NN-B,3rd Yr ECE-B,US,P,B1
+Wed,11,2,204,CTRLS,3rd Yr ECE-B,VJ,L,
+Wed,13,1,R1,EH,3rd Yr ECE-B,SK,L,
+Wed,13,1,313,DMW,3rd Yr ECE-B,JS,T,
+Wed,15,1,314,DSP,3rd Yr ECE-B,AKG,L,
+Wed,16,2,313,DIP-B,3rd Yr ECE-B,GS,L,
+Wed,16,2,214,ECA,3rd Yr ECE-B,RJS,L,
+Thu,9,1,204,AVLSI,3rd Yr ECE-B,VK,L,
+Thu,10,1,313,DIP-B,3rd Yr ECE-B,GS,L,
+Thu,10,1,214,ECA,3rd Yr ECE-B,RJS,L,
+Thu,12,1,204,CTRLS,3rd Yr ECE-B,VJ,L,
+Thu,14,2,303,CTRLS,3rd Yr ECE-B,VJ,P,B2
+Thu,14,2,219,ACS,3rd Yr ECE-B,VS,P,B1
+Thu,16,2,214,NN-B,3rd Yr ECE-B,US,L,
+Fri,9,2,303,AVLSI,3rd Yr ECE-B,VK,P,
+Fri,9,2,313,DMW,3rd Yr ECE-B,JS,L,
+Fri,9,2,R1,EH,3rd Yr ECE-B,SK,L,
+Fri,11,2,314,ACS,3rd Yr ECE-B,VS,L,
+Fri,13,1,314,ECA,3rd Yr ECE-B,RJS,T,A2
+Fri,14,2,R1,EH,3rd Yr ECE-B,SK,P,B2
+Fri,16,2,317,DIP-B,3rd Yr ECE-B,GS,P,B2
+
+# ---- 3rd Year CSE-A ---------------------------------------------------------
+Mon,11,2,219,CN,3rd Yr CSE-A,JS,P,A1
+Mon,11,2,303,AIML,3rd Yr CSE-A,SY,P,A2
+Mon,13,1,214,ECA,3rd Yr CSE-A,RJS,T,A1
+Mon,14,2,313,TOC,3rd Yr CSE-A,UK,L,
+Mon,16,2,214,NN-A,3rd Yr CSE-A,US,L,
+Mon,16,2,R1,EH,3rd Yr CSE-A,SK,P,B1
+Tue,9,2,R1,DIP-A,3rd Yr CSE-A,AKG,L,
+Tue,9,2,204,AVLSI,3rd Yr CSE-A,VK,L,
+Tue,11,1,214,CN,3rd Yr CSE-A,JS,L,
+Tue,12,1,313,TOC,3rd Yr CSE-A,UK,L,
+Tue,13,1,203,DMW,3rd Yr CSE-A,JS,L,
+Tue,14,1,R1,TOC,3rd Yr CSE-A,UK,T,A1
+Tue,15,1,R1,TOC,3rd Yr CSE-A,UK,T,A2
+Tue,16,1,214,NN-A,3rd Yr CSE-A,US,L,
+Wed,9,2,303,DIP-A,3rd Yr CSE-A,AKG,P,A1
+Wed,12,1,R1,AIML,3rd Yr CSE-A,SY,L,
+Wed,13,1,R1,EH,3rd Yr CSE-A,SK,L,
+Wed,13,1,313,DMW,3rd Yr CSE-A,JS,T,
+Wed,14,2,R3,CN,3rd Yr CSE-A,JS,P,A2
+Wed,14,2,219,AIML,3rd Yr CSE-A,SY,P,A1
+Wed,16,2,214,ECA,3rd Yr CSE-A,RJS,L,
+Thu,9,1,204,AVLSI,3rd Yr CSE-A,VK,L,
+Thu,9,1,214,DIP-A,3rd Yr CSE-A,AKG,L,
+Thu,10,1,214,ECA,3rd Yr CSE-A,RJS,L,
+Thu,11,2,214,CN,3rd Yr CSE-A,JS,L,
+Fri,9,2,313,DMW,3rd Yr CSE-A,JS,L,
+Fri,9,2,303,AVLSI,3rd Yr CSE-A,VK,P,
+Fri,9,2,R1,EH,3rd Yr CSE-A,SK,L,
+Fri,11,2,313,AIML,3rd Yr CSE-A,SY,L,
+Fri,14,2,313,NN-A,3rd Yr CSE-A,US,P,A1
+Fri,14,2,R1,EH,3rd Yr CSE-A,SK,P,B2
+
+# ---- 3rd Year CSE-B ---------------------------------------------------------
+Mon,9,2,303,DIP-A,3rd Yr CSE-B,AKG,P,A2
+Mon,11,2,R1,TOC,3rd Yr CSE-B,SNK,L,
+Mon,13,1,214,ECA,3rd Yr CSE-B,RJS,T,A1
+Mon,14,2,R1,CN,3rd Yr CSE-B,JS,P,B1
+Mon,14,2,213,AIML,3rd Yr CSE-B,SY,P,B2
+Mon,16,2,214,NN-A,3rd Yr CSE-B,US,L,
+Mon,16,2,R1,EH,3rd Yr CSE-B,SK,P,B1
+Tue,9,2,R1,DIP-A,3rd Yr CSE-B,AKG,L,
+Tue,11,1,314,AIML,3rd Yr CSE-B,SY,L,
+Tue,13,1,203,DMW,3rd Yr CSE-B,JS,L,
+Tue,14,2,R2,AIML,3rd Yr CSE-B,SY,P,B1
+Tue,14,2,304,CN,3rd Yr CSE-B,JS,P,B2
+Tue,16,1,214,NN-A,3rd Yr CSE-B,US,L,
+Tue,17,1,214,NN-B,3rd Yr CSE-B,US,L,
+Wed,11,1,R1,TOC,3rd Yr CSE-B,SNK,L,
+Wed,12,1,213,CN,3rd Yr CSE-B,JS,L,
+Wed,13,1,R1,EH,3rd Yr CSE-B,SK,L,
+Wed,13,1,313,DMW,3rd Yr CSE-B,JS,T,
+Wed,15,1,313,TOC,3rd Yr CSE-B,SNK,T,B2
+Wed,16,2,214,ECA,3rd Yr CSE-B,RJS,L,
+Thu,9,1,214,DIP-A,3rd Yr CSE-B,AKG,L,
+Thu,10,1,214,ECA,3rd Yr CSE-B,RJS,L,
+Thu,11,2,314,AIML,3rd Yr CSE-B,SY,L,
+Thu,13,1,313,TOC,3rd Yr CSE-B,SNK,T,B1
+Thu,14,2,R1,NN-A,3rd Yr CSE-B,US,P,A2
+Fri,9,2,313,DMW,3rd Yr CSE-B,JS,L,
+Fri,9,2,R1,EH,3rd Yr CSE-B,SK,L,
+Fri,11,2,203,CN,3rd Yr CSE-B,JS,L,
+Fri,13,1,314,ECA,3rd Yr CSE-B,RJS,T,A2
+Fri,14,2,R1,EH,3rd Yr CSE-B,SK,P,B2
+
+# ---- 4th Year EE ------------------------------------------------------------
+Mon,10,1,204,NBD,4th Yr EE,SG,L,
+Mon,11,2,314,MIC,4th Yr EE,SJY,L,
+Mon,13,1,203,EDGE-A,4th Yr EE,MV,L,
+Mon,14,2,Basement Lab,ED,4th Yr EE,AKS,P,A2
+Mon,14,2,513,NBD,4th Yr EE,SG,P,A1
+Mon,16,2,513,ECFC,4th Yr EE,JP,P,
+Tue,9,1,203,SME,4th Yr EE,RR,L,
+Tue,10,1,Basement Lab,ED,4th Yr EE,AKS,L,
+Tue,12,1,314,MEV,4th Yr EE,ART,L,
+Tue,13,1,204,AVFD,4th Yr EE,RS,L,
+Tue,14,2,313,EDGE-A,4th Yr EE,MV,L,
+Tue,14,2,311,ECFC,4th Yr EE,JP,L,
+Tue,14,1,314,SME,4th Yr EE,RR,L,
+Tue,15,1,317,SQAM,4th Yr EE,JJ,T,A1
+Wed,9,2,317,FOA,4th Yr EE,UK,P,
+Wed,9,1,203,SME,4th Yr EE,RR,L,
+Wed,9,2,217,EDGE-A,4th Yr EE,MV,P,A2
+Wed,9,2,219,RL-A,4th Yr EE,SNK,P,A1
+Wed,10,1,R1,SQAM,4th Yr EE,JJ,L,
+Wed,11,2,212,NBD,4th Yr EE,SG,L,
+Wed,13,1,204,FOA,4th Yr EE,UK,L,
+Wed,13,1,217,SME,4th Yr EE,RR,T,A1
+Wed,13,1,311,ECFC,4th Yr EE,JP,L,
+Wed,14,1,313,RL-A,4th Yr EE,SNK,L,
+Wed,15,1,204,AVFD,4th Yr EE,RS,L,
+Wed,16,2,317,AVFD,4th Yr EE,RS,P,
+Thu,9,2,Basement Lab,ED,4th Yr EE,AKS,L,
+Thu,11,2,R4,FOA,4th Yr EE,UK,L,
+Thu,11,2,312,SQAM,4th Yr EE,JJ,L,
+Thu,11,2,217,EDGE-A,4th Yr EE,MV,P,A1
+Thu,11,2,219,RL-A,4th Yr EE,SNK,P,A2
+Thu,13,1,204,MIC,4th Yr EE,SJY,L,
+Thu,14,2,513,NBD,4th Yr EE,SG,P,A2
+Thu,16,2,313,RL-A,4th Yr EE,SNK,L,
+Fri,9,2,Basement Lab,ED,4th Yr EE,AKS,P,A1
+Fri,11,2,513,MEV,4th Yr EE,ART,P,
+Fri,13,1,204,AVFD,4th Yr EE,RS,L,
+Fri,14,2,Basement Lab,MEV,4th Yr EE,ART,L,
+Fri,16,2,303,MIC,4th Yr EE,SJY,P,B1
+
+# ---- 4th Year ECE-A ---------------------------------------------------------
+Mon,9,2,311,SCE,4th Yr ECE-A,RHS,P,A2
+Mon,11,2,314,MIC,4th Yr ECE-A,SJY,L,
+Mon,13,1,213,RL-B,4th Yr ECE-A,SNK,L,
+Mon,14,2,203,SCE,4th Yr ECE-A,VJ,L,
+Mon,16,2,314,DASIC,4th Yr ECE-A,KS,P,A1
+Tue,9,1,203,SME,4th Yr ECE-A,RR,L,
+Tue,10,1,313,SCE,4th Yr ECE-A,RHS,L,
+Tue,11,2,513,DASIC,4th Yr ECE-A,KS,P,A2
+Tue,13,1,204,AVFD,4th Yr ECE-A,RS,L,
+Tue,14,2,214,RL-B,4th Yr ECE-A,SNK,L,
+Tue,14,1,314,SME,4th Yr ECE-A,RR,L,
+Tue,15,1,314,SME,4th Yr ECE-A,RR,T,A2
+Tue,16,2,314,DASIC,4th Yr ECE-A,KS,P,A1
+Wed,9,2,317,FOA,4th Yr ECE-A,UK,P,
+Wed,9,1,203,SME,4th Yr ECE-A,RR,L,
+Wed,10,1,R1,SQAM,4th Yr ECE-A,JJ,L,
+Wed,11,2,Basement Lab,SCE,4th Yr ECE-A,RHS,P,A1
+Wed,13,1,204,FOA,4th Yr ECE-A,UK,L,
+Wed,14,1,314,EDGE-B,4th Yr ECE-A,MV,L,
+Wed,15,1,204,AVFD,4th Yr ECE-A,RS,L,
+Wed,16,2,317,AVFD,4th Yr ECE-A,RS,P,
+Thu,11,2,R4,FOA,4th Yr ECE-A,UK,L,
+Thu,11,2,312,SQAM,4th Yr ECE-A,JJ,L,
+Thu,13,1,204,MIC,4th Yr ECE-A,SJY,L,
+Thu,14,2,314,DASIC,4th Yr ECE-A,KS,L,
+Thu,16,2,314,EDGE-B,4th Yr ECE-A,MV,L,
+Thu,16,1,303,SQAM,4th Yr ECE-A,JJ,T,A2
+Fri,9,2,219,RL-B,4th Yr ECE-A,SNK,P,B1
+Fri,9,2,212,EDGE-B,4th Yr ECE-A,MV,P,B2
+Fri,11,2,219,RL-B,4th Yr ECE-A,SNK,P,B2
+Fri,11,2,212,EDGE-B,4th Yr ECE-A,MV,P,B1
+Fri,13,1,204,AVFD,4th Yr ECE-A,RS,L,
+Fri,14,2,213,DASIC,4th Yr ECE-A,KS,P,A2
+Fri,16,2,303,MIC,4th Yr ECE-A,SJY,P,B1
+
+# ---- 4th Year ECE-B ---------------------------------------------------------
+Mon,9,2,317,DASIC,4th Yr ECE-B,KS,P,B2
+Mon,11,2,314,MIC,4th Yr ECE-B,SJY,L,
+Mon,13,1,203,EDGE-A,4th Yr ECE-B,MV,L,
+Mon,14,2,314,SCE,4th Yr ECE-B,RHS,L,
+Mon,16,2,314,DASIC,4th Yr ECE-B,KS,P,B1
+Mon,16,2,513,ECFC,4th Yr ECE-B,JP,P,
+Tue,9,1,203,SME,4th Yr ECE-B,RR,L,
+Tue,11,1,313,SCE,4th Yr ECE-B,RHS,L,
+Tue,12,1,314,MEV,4th Yr ECE-B,ART,L,
+Tue,13,1,204,AVFD,4th Yr ECE-B,RS,L,
+Tue,14,2,313,EDGE-A,4th Yr ECE-B,MV,L,
+Tue,14,2,311,ECFC,4th Yr ECE-B,JP,L,
+Tue,14,1,314,SME,4th Yr ECE-B,RR,L,
+Tue,15,1,317,SQAM,4th Yr ECE-B,JJ,T,A1
+Tue,16,2,314,DASIC,4th Yr ECE-B,KS,P,B1
+Wed,9,2,317,FOA,4th Yr ECE-B,UK,P,
+Wed,9,1,203,SME,4th Yr ECE-B,RR,L,
+Wed,9,2,217,EDGE-A,4th Yr ECE-B,MV,P,A2
+Wed,9,2,219,RL-A,4th Yr ECE-B,SNK,P,A1
+Wed,10,1,R1,SQAM,4th Yr ECE-B,JJ,L,
+Wed,11,2,214,DASIC,4th Yr ECE-B,KS,L,
+Wed,13,1,204,FOA,4th Yr ECE-B,UK,L,
+Wed,13,1,217,SME,4th Yr ECE-B,RR,T,A1
+Wed,13,1,311,ECFC,4th Yr ECE-B,JP,L,
+Wed,14,1,313,RL-A,4th Yr ECE-B,SNK,L,
+Wed,15,1,204,AVFD,4th Yr ECE-B,RS,L,
+Wed,16,2,317,AVFD,4th Yr ECE-B,RS,P,
+Thu,11,2,R4,FOA,4th Yr ECE-B,UK,L,
+Thu,11,2,312,SQAM,4th Yr ECE-B,JJ,L,
+Thu,11,2,217,EDGE-A,4th Yr ECE-B,MV,P,A1
+Thu,11,2,219,RL-A,4th Yr ECE-B,SNK,P,A2
+Thu,13,1,204,MIC,4th Yr ECE-B,SJY,L,
+Thu,14,2,304,SCE,4th Yr ECE-B,RHS,P,B2
+Thu,16,2,313,RL-A,4th Yr ECE-B,SNK,L,
+Fri,9,2,312,DASIC,4th Yr ECE-B,KS,P,B2
+Fri,11,2,513,MEV,4th Yr ECE-B,ART,P,
+Fri,13,1,204,AVFD,4th Yr ECE-B,RS,L,
+Fri,14,2,312,MIC,4th Yr ECE-B,SJY,P,B2
+Fri,14,2,Basement Lab,MEV,4th Yr ECE-B,ART,L,
+Fri,16,2,219,SCE,4th Yr ECE-B,RHS,P,B1
+
+# ---- 4th Year CSE-A ---------------------------------------------------------
+Mon,11,2,304,CPS,4th Yr CSE-A,SK,P,A2
+Mon,13,1,203,EDGE-A,4th Yr CSE-A,MV,L,
+Mon,14,2,214,CPS,4th Yr CSE-A,SK,L,
+Mon,16,2,513,ECFC,4th Yr CSE-A,JP,P,
+Tue,9,1,203,SME,4th Yr CSE-A,RR,L,
+Tue,12,1,214,CPS,4th Yr CSE-A,SK,L,
+Tue,12,1,314,MEV,4th Yr CSE-A,ART,L,
+Tue,14,2,313,EDGE-A,4th Yr CSE-A,MV,L,
+Tue,14,2,311,ECFC,4th Yr CSE-A,JP,L,
+Tue,14,1,314,SME,4th Yr CSE-A,RR,L,
+Tue,15,1,317,SQAM,4th Yr CSE-A,JJ,T,A1
+Wed,9,2,217,EDGE-A,4th Yr CSE-A,MV,P,A2
+Wed,9,2,219,RL-A,4th Yr CSE-A,SNK,P,A1
+Wed,9,1,203,SME,4th Yr CSE-A,RR,L,
+Wed,10,1,R1,SQAM,4th Yr CSE-A,JJ,L,
+Wed,11,2,219,CPS,4th Yr CSE-A,SK,P,A1
+Wed,13,1,217,SME,4th Yr CSE-A,RR,T,A1
+Wed,13,1,311,ECFC,4th Yr CSE-A,JP,L,
+Wed,14,1,313,RL-A,4th Yr CSE-A,SNK,L,
+Thu,11,2,217,EDGE-A,4th Yr CSE-A,MV,P,A1
+Thu,11,2,312,SQAM,4th Yr CSE-A,JJ,L,
+Thu,11,2,219,RL-A,4th Yr CSE-A,SNK,P,A2
+Thu,16,2,313,RL-A,4th Yr CSE-A,SNK,L,
+Fri,11,2,513,MEV,4th Yr CSE-A,ART,P,
+Fri,14,2,Basement Lab,MEV,4th Yr CSE-A,ART,L,
+
+# ---- 4th Year CSE-B ---------------------------------------------------------
+Mon,13,1,213,RL-B,4th Yr CSE-B,SNK,L,
+Mon,16,2,513,ECFC,4th Yr CSE-B,JP,P,
+Tue,9,1,203,SME,4th Yr CSE-B,RR,L,
+Tue,11,1,R2,CPS,4th Yr CSE-B,SK,L,
+Tue,12,1,314,MEV,4th Yr CSE-B,ART,L,
+Tue,14,2,214,RL-B,4th Yr CSE-B,SNK,L,
+Tue,14,2,311,ECFC,4th Yr CSE-B,JP,L,
+Tue,14,1,314,SME,4th Yr CSE-B,RR,L,
+Tue,15,1,314,SME,4th Yr CSE-B,RR,T,A2
+Wed,9,1,203,SME,4th Yr CSE-B,RR,L,
+Wed,10,1,R1,SQAM,4th Yr CSE-B,JJ,L,
+Wed,13,1,311,ECFC,4th Yr CSE-B,JP,L,
+Wed,14,1,314,EDGE-B,4th Yr CSE-B,MV,L,
+Thu,9,2,R1,CPS,4th Yr CSE-B,SK,L,
+Thu,11,2,R3,CPS,4th Yr CSE-B,SK,P,B1
+Thu,11,2,312,SQAM,4th Yr CSE-B,JJ,L,
+Thu,14,2,R3,CPS,4th Yr CSE-B,SK,P,B2
+Thu,16,2,314,EDGE-B,4th Yr CSE-B,MV,L,
+Thu,16,1,303,SQAM,4th Yr CSE-B,JJ,T,A2
+Fri,9,2,219,RL-B,4th Yr CSE-B,SNK,P,B1
+Fri,9,2,212,EDGE-B,4th Yr CSE-B,MV,P,B2
+Fri,11,2,219,RL-B,4th Yr CSE-B,SNK,P,B2
+Fri,11,2,212,EDGE-B,4th Yr CSE-B,MV,P,B1
+Fri,11,2,513,MEV,4th Yr CSE-B,ART,P,
+Fri,14,2,Basement Lab,MEV,4th Yr CSE-B,ART,L,

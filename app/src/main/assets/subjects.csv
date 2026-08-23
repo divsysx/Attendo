@@ -1,0 +1,58 @@
+# Subject acronyms — Faculty of Technology, University of Delhi (2026-27)
+# code,name
+# Taken from the "Subject Acronyms" page of Timetable.pdf. The grid only ever prints
+# the code, so this is what turns "ADEC" into something readable on screen.
+code,name
+ACS,Analog Communication Systems
+ADA,Analysis and Design of Algorithms
+ADEC,Analog and Digital Electronic Circuits
+AEW-I,Advanced Electrical Workshop-I
+AIML,Artificial Intelligence and Machine Learning
+AVFD,Analog VLSI Filter Design
+AVLSI,Advanced Digital VLSI Circuits and Physical Design
+CN,Computer Networks
+CPS,Cyber Physical Systems
+CS,Control System
+CTRLS,Control Systems Engineering
+CW,Computer Workshop
+DASIC,Digital ASIC Design: RTL to GDS-II
+DBMS,Database and Management Systems
+DE-1,Digital Electronics-I
+DIP,Digital Image Processing
+DMW,Data Mining and Warehousing
+DSD,Digital System Design
+DSP,Digital Signal Processing
+ECA,Energy Conservation and Audit
+ECFC,Electro-Chemistry of Fuel Cells
+ECW,Electronics Workshop
+ED,Electrical Drives
+EDC,Electronic Devices and Circuits
+EDGE,Edge Computing
+EH,Ethical Hacking and Advanced Cybersecurity
+EM-I,Electrical Machines I
+EMFT,Electromagnetic Field Theory
+ENA,Electrical Network Analysis
+EVS-2,Environmental Science: Theory into Practice-II
+EW,Electrical Workshop
+FCP,Fundamentals of Computer Programming
+FOA,Fundamentals of Algorithms
+FSS,Fundamentals of Signal and Systems
+HBT,हिंदी भाषा एवं तकनीक
+IEEE,Introduction to Electrical and Electronics
+IEHV,Introduction to Electric and Hybrid Vehicles
+M-1,Mathematics 1
+MEV,Modeling and Simulation of EHV
+MIC,Microwave Integrated Circuits
+NAS,Network Analysis and Synthesis
+NBD,Net Zero Building Design
+NN,Neural Networks
+PHY,Physics
+PSA,Power System Analysis
+PSCS,Probability and Statistics for Computer Science
+RL,Reinforcement Learning
+SCE,Scientific Computing for Electronics
+SFL,Sports for Life / Fit India
+SME,Software Maintenance and Evolution
+SQAM,Software Quality Assurance and Metrics
+TOC,Theory of Computation
+VLSI,VLSI Technology and Design
