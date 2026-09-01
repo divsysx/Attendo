@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * The one place the app reads and writes attendance.
@@ -39,6 +40,13 @@ class AttendanceRepository(
     private val courseDao = database.courseDao()
     private val patternDao = database.patternDao()
     private val sessionDao = database.sessionDao()
+
+    /**
+     * The wall-clock instant for row timestamps. Named so the backlog functions can take
+     * a `now: LocalDateTime` parameter — the eligibility moment, which needs the time of
+     * day — without shadowing the class's [now].
+     */
+    private fun nowInstant(): Instant = now()
 
     // ---- reads --------------------------------------------------------------
 
@@ -218,6 +226,33 @@ class AttendanceRepository(
             inserted + pending.size
         }
 
+    /**
+     * The missed-the-whole-day path: commits everything the day still owes as attended
+     * by nobody — held, so the hours count on both sides of the fraction, with an empty
+     * mask, so they count as missed.
+     *
+     * Only the day's own scheduled classes are touched, and only the ones still awaiting
+     * a decision: a class already marked, cancelled or resized that day keeps what the
+     * student already said about it.
+     *
+     * @return how many rows were written.
+     */
+    suspend fun markDayAbsent(date: LocalDate, calendar: AcademicCalendar): Int =
+        database.withTransaction {
+            val instant = now()
+            val plan = dayPlan(date, calendar)
+
+            val fresh = plan.missing.map { draft ->
+                SessionOps.markAbsent(draft.toSession(), instant).toEntity()
+            }
+            val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
+
+            val pending = plan.awaitingReview.map { SessionOps.markAbsent(it, instant).toEntity() }
+            sessionDao.updateAll(pending)
+
+            inserted + pending.size
+        }
+
     // ---- exceptions ---------------------------------------------------------
 
     /**
@@ -260,6 +295,104 @@ class AttendanceRepository(
             .map { SessionOps.reopen(it, instant).toEntity() }
         sessionDao.updateAll(reopened)
         reopened.size
+    }
+
+    // ---- bulk actions over the review backlog -------------------------------
+
+    /**
+     * Everything past [through] that is still sitting unreviewed, drafts included.
+     *
+     * This is the raw material for the two bulk actions on the backlog card: the days a
+     * student opens the app after a fortnight and owes decisions on. The window is the
+     * caller's to apply — the dashboard already knows which dates are the student's to
+     * mark and which pre-date their joining.
+     */
+    /**
+     * The unreviewed classes and still-to-create drafts the backlog actions work on,
+     * between [from] and [through] — restricted to what is *eligible* as of [now].
+     *
+     * Eligibility is [ClassSession.isBacklogEligibleOn]'s: a class dated today counts
+     * only once its scheduled end time has passed, so a bulk sweep over a range whose
+     * last date is today can never record a class as missed while it is still running
+     * or still to come. Drafts are held to the same rule as stored rows — a class the
+     * generator would create for a slot that has not finished yet is not backlog either.
+     */
+    suspend fun backlogBetween(
+        from: LocalDate,
+        through: LocalDate,
+        calendar: AcademicCalendar,
+        now: LocalDateTime,
+    ): Pair<List<ClassSession>, List<SessionGenerator.Draft>> {
+        val patterns = patternDao.all().map { it.toModel() }
+        val existing = sessionDao.between(from, through).map { it.toModel() }
+        val pending = existing.filter { it.isBacklogEligibleOn(now) }
+        val drafts = SessionGenerator.draftsFor(patterns, existing, from, through, calendar)
+            .filterNot { it.repeatsARetiredClass(existing, patterns) }
+            .filter { it.toSession().isBacklogEligibleOn(now) }
+        return pending to drafts
+    }
+
+    /**
+     * The bulk action for "I was absent for all of it": every unreviewed *eligible* class
+     * between [from] and [through], drafts included, becomes held-with-nobody-there.
+     *
+     * Nothing is ever *left out* of the percentage by this — each hour lands in both the
+     * numerator's debt and the denominator, exactly as if it had been marked missed one
+     * class at a time. That is the honest reading of an unmarked past for a student who
+     * attended none of it, and it is why there is deliberately no "ignore these" option
+     * anywhere in the app. Classes already decided — present, missed, cancelled — are
+     * never touched, and neither is a class that has not finished yet.
+     *
+     * @return how many rows were written.
+     */
+    suspend fun markBacklogAbsent(
+        from: LocalDate,
+        through: LocalDate,
+        calendar: AcademicCalendar,
+        now: LocalDateTime,
+    ): Int = database.withTransaction {
+        val instant = nowInstant()
+        val (pending, drafts) = backlogBetween(from, through, calendar, now)
+
+        val fresh = drafts.map { SessionOps.markAbsent(it.toSession(), instant).toEntity() }
+        val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
+
+        val updated = SessionOps.markAllAbsent(pending, instant).map { it.toEntity() }
+        sessionDao.updateAll(updated)
+
+        inserted + updated.size
+    }
+
+    /**
+     * The bulk action for "none of them happened": every unreviewed *eligible* class
+     * between [from] and [through], drafts included, is cancelled with [reason].
+     *
+     * Cancelling removes hours from both sides of the fraction, which is the correct
+     * reading of a stretch the department declared off — and the only bulk escape from
+     * the denominator the app offers, precisely because here the hours were genuinely
+     * never held. As with [markBacklogAbsent], only eligible classes are touched.
+     *
+     * @return how many rows were written.
+     */
+    suspend fun cancelBacklog(
+        from: LocalDate,
+        through: LocalDate,
+        reason: CancellationReason,
+        calendar: AcademicCalendar,
+        now: LocalDateTime,
+    ): Int = database.withTransaction {
+        val instant = nowInstant()
+        val (pending, drafts) = backlogBetween(from, through, calendar, now)
+
+        val fresh = drafts.map {
+            SessionOps.cancel(it.toSession(), reason, instant).toEntity()
+        }
+        val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
+
+        val updated = SessionOps.cancelAll(pending, reason, instant).map { it.toEntity() }
+        sessionDao.updateAll(updated)
+
+        inserted + updated.size
     }
 
     suspend fun cancel(

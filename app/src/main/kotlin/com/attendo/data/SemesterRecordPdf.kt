@@ -113,7 +113,7 @@ private class PdfPageWriter(private val document: PdfDocument) : AutoCloseable {
         doc.displayName?.let { subhead(it) }
         gap(6f)
         fact("Semester", doc.semesterLabel)
-        fact("Term", doc.dateRange)
+        fact("Semester dates", doc.dateRange)
         fact("Exported", DATE.format(doc.exportedOn))
         doc.section?.let { fact("Section", it) }
         doc.batch?.let { fact("Batch", it) }
@@ -135,7 +135,7 @@ private class PdfPageWriter(private val document: PdfDocument) : AutoCloseable {
 
         heading("Courses")
         if (doc.courses.isEmpty()) {
-            body("No courses with recorded activity this semester.")
+            body("No courses held any classes this semester.")
         } else {
             courseTable(doc.courses)
         }
@@ -143,7 +143,7 @@ private class PdfPageWriter(private val document: PdfDocument) : AutoCloseable {
 
         if (doc.sessions.isNotEmpty()) {
             ruleLine()
-            heading("Session history")
+            heading("Class history")
             sessionTable(doc.sessions)
         }
     }
@@ -225,7 +225,7 @@ private class PdfPageWriter(private val document: PdfDocument) : AutoCloseable {
         canvas.drawText("Date", S_DATE, baseline, muted)
         canvas.drawText("Time", S_TIME, baseline, muted)
         canvas.drawText("Course", S_COURSE, baseline, muted)
-        drawRight("Hrs", S_HRS_R, baseline, muted)
+        drawRight("Planned", S_HRS_R, baseline, muted)
         drawRight("Att.", S_ATT_R, baseline, muted)
         canvas.drawText("Status", S_STATUS, baseline, muted)
         y += SESSION_HEADER
@@ -341,14 +341,14 @@ private class PdfPageWriter(private val document: PdfDocument) : AutoCloseable {
         const val COL_PCT_R = 475f    // right edge of %
         const val COL_TGT_R = 515f    // right edge of Target
 
-        // Session-table column geometry. date 90 · time 60 · course 110 · hrs 65 · att. 65 · status 125.
+        // Session-table column geometry. date 90 · time 60 · course 110 · planned 60 · att. 50 · status 145.
         const val S_DATE = 0f
         const val S_TIME = 90f
         const val S_COURSE = 150f
         const val S_COURSE_WIDTH = 110f
-        const val S_HRS_R = 325f
-        const val S_ATT_R = 390f
-        const val S_STATUS = 390f
+        const val S_HRS_R = 320f
+        const val S_ATT_R = 370f
+        const val S_STATUS = 375f
 
         const val COURSE_ROW = 17f
         const val COURSE_HEADER = 16f

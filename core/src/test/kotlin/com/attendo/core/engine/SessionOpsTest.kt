@@ -164,6 +164,85 @@ class SessionOpsTest {
     }
 
     @Test
+    fun `marking the whole day absent commits every pending row as missed`() {
+        val pending = generated(units = 2, startHour = 9)
+
+        val result = SessionOps.markAllAbsent(listOf(pending), later)
+
+        assertEquals(SessionStatus.HELD, result[0].status)
+        assertEquals(UnitMask.NONE, result[0].unitsMask)
+        assertEquals(0, result[0].unitsAttended)
+        assertTrue(result[0].countsTowardAttendance)
+    }
+
+    @Test
+    fun `marking the whole day absent still counts the hours as held`() {
+        val twoClasses = listOf(
+            generated(units = 2, startHour = 9),
+            generated(units = 1, startHour = 11),
+        )
+
+        val tally = AttendanceEngine.tallyOf(SessionOps.markAllAbsent(twoClasses, later))
+
+        // Missed, not cancelled: the denominator grows with every hour.
+        assertEquals(Tally(unitsAttended = 0, unitsHeld = 3), tally)
+    }
+
+    @Test
+    fun `marking the whole day absent leaves rows already dealt with untouched`() {
+        val alreadyHeld = SessionOps.markPresent(generated(units = 1, startHour = 11), now)
+        val cancelled = SessionOps.cancel(generated(units = 1, startHour = 12), now = now)
+
+        val result = SessionOps.markAllAbsent(listOf(alreadyHeld, cancelled), later)
+
+        // An attended class stays attended and keeps its original timestamp; a cancelled
+        // one stays cancelled rather than being quietly turned into an absence.
+        assertEquals(1, result[0].unitsAttended)
+        assertEquals(now, result[0].approvedAt)
+        assertEquals(SessionStatus.CANCELLED, result[1].status)
+        assertEquals(CancellationReason.FACULTY_CANCELLED, result[1].cancellationReason)
+    }
+
+    @Test
+    fun `cancelling all pending rows leaves the denominator untouched`() {
+        val pending = generated(units = 2, startHour = 9)
+        val alreadyHeld = SessionOps.markPresent(generated(units = 1, startHour = 11), now)
+
+        val result = SessionOps.cancelAll(
+            listOf(pending, alreadyHeld),
+            CancellationReason.HOLIDAY,
+            later,
+        )
+
+        assertEquals(SessionStatus.CANCELLED, result[0].status)
+        assertEquals(CancellationReason.HOLIDAY, result[0].cancellationReason)
+        assertFalse(result[0].countsTowardAttendance)
+
+        // The attended row is untouched — its hours keep counting on both sides.
+        assertEquals(SessionStatus.HELD, result[1].status)
+        assertEquals(1, result[1].unitsAttended)
+
+        val tally = AttendanceEngine.tallyOf(result)
+        assertEquals(Tally(unitsAttended = 1, unitsHeld = 1), tally)
+    }
+
+    @Test
+    fun `bulk cancelling a whole backlog never adds to the fraction`() {
+        val backlog = listOf(
+            generated(units = 2, startHour = 9),
+            generated(units = 1, startHour = 11),
+            generated(units = 1, startHour = 12),
+        )
+
+        val tally = AttendanceEngine.tallyOf(
+            SessionOps.cancelAll(backlog, CancellationReason.HOLIDAY, later),
+        )
+
+        // Cancelled hours vanish from both sides — not held, not missed, not counted.
+        assertEquals(Tally(unitsAttended = 0, unitsHeld = 0), tally)
+    }
+
+    @Test
     fun `re-approving does not overwrite the original approval time`() {
         val approved = SessionOps.approve(generated(), now)
 

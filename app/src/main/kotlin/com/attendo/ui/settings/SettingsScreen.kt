@@ -25,6 +25,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.attendo.core.model.AttendanceBasis
 import com.attendo.core.model.Percent
+import com.attendo.data.ThemePreference
 import com.attendo.ui.components.AttendoDatePickerDialog
 import com.attendo.ui.components.AttendoTopBar
 import com.attendo.ui.components.ChipChoice
@@ -76,6 +78,14 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var dialog by remember { mutableStateOf<SettingsDialog?>(null) }
+    var feedbackOpen by remember { mutableStateOf(false) }
+
+    if (feedbackOpen) {
+        FeedbackSection(
+            appVersion = state.version.name.ifBlank { "unknown" },
+            onDismiss = { feedbackOpen = false },
+        )
+    }
 
     Column(Modifier.fillMaxSize()) {
         AttendoTopBar(title = "Settings", onBack = onBack)
@@ -88,6 +98,7 @@ fun SettingsScreen(
                 viewModel = viewModel,
                 onSeed = onSeed,
                 onOpenBackup = onOpenBackup,
+                onFeedback = { feedbackOpen = true },
                 onDialog = { dialog = it },
             )
         }
@@ -146,9 +157,12 @@ private fun SettingsContent(
     viewModel: SettingsViewModel,
     onSeed: () -> Unit,
     onOpenBackup: () -> Unit,
+    onFeedback: () -> Unit,
     onDialog: (SettingsDialog) -> Unit,
 ) {
     val calendar = state.calendar
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    val appearance by viewModel.appearance.collectAsStateWithLifecycle()
     val saturdays = remember(calendar.termStart, calendar.termEnd) {
         saturdaysBetween(calendar.termStart, calendar.termEnd)
     }
@@ -169,8 +183,8 @@ private fun SettingsContent(
                 Text(
                     text = "Used to greet you on the Attendance tab, and to say whose file it " +
                         "is when you import a backup. It stays on this phone: there is no " +
-                        "account, nothing is sent anywhere, and none of your data is filed " +
-                        "under it.",
+                        "account, nothing you record is sent anywhere, and none of your data " +
+                        "is filed under it.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -209,7 +223,7 @@ private fun SettingsContent(
 
         item { Divider() }
 
-        item { SectionLabel("Term") }
+        item { SectionLabel("Semester") }
         item {
             Column {
                 SettingRow(
@@ -357,6 +371,54 @@ private fun SettingsContent(
 
         item { Divider() }
 
+        item { SectionLabel("Appearance") }
+        item {
+            Column {
+                Text(text = "Theme", style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(8.dp))
+                ChipChoice(
+                    options = ThemePreference.entries,
+                    selected = appearance.theme,
+                    label = ::themeLabel,
+                    onSelect = viewModel::setTheme,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "System default follows this phone's dark mode setting, and " +
+                        "changes when it changes. Light and Dark hold Attendo to one of them.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        item {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Use dynamic colours",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(
+                        checked = appearance.dynamicColors,
+                        onCheckedChange = viewModel::setDynamicColors,
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Use colours from your device when available. Off, Attendo always " +
+                        "uses its own colours.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item { Divider() }
+
         item { SectionLabel("Data & backup") }
         item {
             Column {
@@ -366,9 +428,28 @@ private fun SettingsContent(
                     onClick = onOpenBackup,
                 )
                 Text(
-                    text = "A term of marks cannot be reconstructed from anything else — not " +
-                        "from the timetable, and not from memory. Export a file, keep it off " +
-                        "this phone, and import it on the next one.",
+                    text = "A semester's attendance cannot be reconstructed from anything else — " +
+                        "not from the timetable, and not from memory. Export a file, keep it " +
+                        "off this phone, and import it on the next one.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item { Divider() }
+
+        item { SectionLabel("Feedback") }
+        item {
+            Column {
+                SettingRow(
+                    label = "Report a bug or suggest an improvement",
+                    value = "Send",
+                    onClick = onFeedback,
+                )
+                Text(
+                    text = "Opens your email app with the message started for you. Nothing is " +
+                        "sent from inside Attendo — there is no account and no server.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -380,7 +461,7 @@ private fun SettingsContent(
         item { SectionLabel("How the percentage is worked out") }
         item {
             Text(
-                text = "Attendance is counted in one-hour units, not in classes. Sitting " +
+                text = "Attendance is counted in hours, not in classes. Sitting " +
                     "through one hour of a two-hour lab is 50% of that lab, and the course " +
                     "figure is every hour attended divided by every hour held — never an " +
                     "average of averages. Cancelled classes count for neither side, and a " +
@@ -412,6 +493,25 @@ private fun SettingsContent(
             }
         }
 
+        // Only builds with an update source get the section. A Play-installed build has
+        // nothing to check — Play owns its updates — and a section that always said
+        // "couldn't check" would be worse than no section.
+        if (state.update.supported) {
+            item { Divider() }
+            item { SectionLabel("Updates") }
+            item {
+                UpdatesSection(
+                    panel = state.update,
+                    state = updateState,
+                    onCheck = viewModel::checkForUpdates,
+                    onDownload = viewModel::downloadUpdate,
+                    onCancelDownload = viewModel::cancelUpdateDownload,
+                    onInstall = viewModel::installUpdate,
+                    onDismiss = viewModel::dismissUpdate,
+                )
+            }
+        }
+
         item { Divider() }
 
         item { SectionLabel("About") }
@@ -431,8 +531,14 @@ private fun SettingsContent(
     }
 }
 
-/** A label with a tappable value on the right — the shape of every date row here. */
-@Composable
+/** The words on the three theme chips — a preference, so "System default" not "Auto". */
+internal fun themeLabel(theme: ThemePreference): String = when (theme) {
+    ThemePreference.SYSTEM -> "System default"
+    ThemePreference.LIGHT -> "Light"
+    ThemePreference.DARK -> "Dark"
+}
+
+/** A label with a tappable value on the right — the shape of every date row here. */@Composable
 private fun SettingRow(
     label: String,
     value: String,
@@ -549,7 +655,7 @@ private fun Divider() {
     HorizontalDivider(Modifier.padding(top = 4.dp))
 }
 
-/** Every Saturday the term contains, for the working-Saturday picker. */
+/** Every Saturday the semester contains, for the working-Saturday picker. */
 private fun saturdaysBetween(from: LocalDate, to: LocalDate): List<LocalDate> {
     val first = from.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
     return generateSequence(first) { it.plusWeeks(1) }

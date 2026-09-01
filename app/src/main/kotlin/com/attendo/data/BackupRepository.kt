@@ -289,7 +289,7 @@ class BackupRepository(
             storedSettings.attendanceStart != plan.preferences.attendanceStart
         ) {
             return RestoreResult.Failed(
-                "Your classes were restored, but the term dates and targets were not. " +
+                "Your classes were restored, but the semester dates and targets were not. " +
                     "Check them in Settings.",
                 dataUnchanged = false,
             )

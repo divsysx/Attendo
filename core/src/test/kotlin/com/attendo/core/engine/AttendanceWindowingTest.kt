@@ -341,8 +341,8 @@ class AttendanceWindowingTest {
     fun `a student is not asked to review the classes from before they arrived`() {
         val today = LocalDate.of(2026, 10, 1)
 
-        val university = AttendanceEngine.daysAwaitingReview(allSessions, today)
-        val personal = AttendanceEngine.daysAwaitingReview(allSessions, today, AttendanceWindow.since(joinedOn))
+        val university = AttendanceEngine.daysAwaitingReview(allSessions, today.atTime(9, 0))
+        val personal = AttendanceEngine.daysAwaitingReview(allSessions, today.atTime(9, 0), AttendanceWindow.since(joinedOn))
 
         assertEquals(listOf(aug(6), LocalDate.of(2026, 9, 7)), university)
         assertEquals(listOf(LocalDate.of(2026, 9, 7)), personal)

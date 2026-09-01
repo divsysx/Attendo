@@ -1,17 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-      No permissions. Everything the app knows is either typed in by the student or
-      read from the timetable bundled in assets/ — there is no network call, no
-      account, and no reason to ask for anything.
+      The update system is the app's only networking: it asks the GitHub Releases API
+      whether a newer build exists and, when the student asks for it, downloads that
+      release's APK. Analytics reaches Firebase's servers. Nothing a student records is
+      ever sent over either — see UsageAnalytics for the boundary.
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+      Android 8+ gates "install an APK from outside a store" behind a per-app switch;
+      this permission is what puts Attendo's name on that switch. Nothing is installed
+      silently: every update ends in Android's own installer, asking the student to
+      approve it.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
+      The Firebase SDK's manifest asks for the advertising ID permission; Attendo shows no
+      ads and uses no advertising ID, so it is removed rather than merely unused. Analytics
+      here is aggregate and anonymous, and that is the whole point of it.
+    -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <!--
+      Package visibility (Android 11+): an app cannot see what other apps can handle
+      unless it declares what it looks for. The feedback flow asks the system whether
+      any mail app can take ACTION_SENDTO over mailto: before firing the intent, so a
+      phone with no mail app gets a sentence on screen instead of a button that does
+      nothing. Without this declaration that check would answer "no mail app" on every
+      phone, including the ones with three.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
+
+    <!--
+      Android's automatic backup is opt-in, per student, and switchable at runtime — the
+      manifest here only enables the mechanism; whether any given pass stores anything is
+      decided by AttendoBackupAgent from the "Automatic backup" toggle (Settings →
+      Data & backup, off by default). Off, a pass contributes nothing and reinstalling
+      starts fresh. On, the rules in backup_rules.xml / data_extraction_rules.xml say
+      what Android may copy. What no app can do is delete a backup Android has already
+      stored — turning the toggle off stops new copies, not the ones already made.
+
+      Keeping a semester across phones or reinstalling on purpose is still what the
+      explicit backup file is for (Settings → Backup): a JSON document the student
+      exports themselves and restores deliberately, on any device, with their own hands.
+    -->
     <application
         android:name=".AttendoApplication"
         android:allowBackup="true"
+        android:backupAgent="com.attendo.data.AttendoBackupAgent"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
+        android:fullBackupOnly="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -29,6 +79,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          Hands a verified, downloaded update to Android's installer. Exposes exactly the
+          private `files/updates/` directory and nothing else, for the seconds between
+          "Install" and Android taking over.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.update"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_file_paths" />
+        </provider>
     </application>
 
 </manifest>

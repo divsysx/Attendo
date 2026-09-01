@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,7 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.attendo.core.engine.CourseStats
 import com.attendo.core.engine.DayMark
+import com.attendo.core.model.CancellationReason
 import com.attendo.ui.AttendoIcons
 import com.attendo.ui.components.AttendanceBar
 import com.attendo.ui.components.AttendoTopBar
@@ -48,12 +52,14 @@ import com.attendo.ui.components.MarkSwatch
 import com.attendo.ui.components.PercentHeadline
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.components.TargetAdviceLine
+import com.attendo.ui.components.UpdateCard
 import com.attendo.ui.days
 import com.attendo.ui.display
 import com.attendo.ui.hours
 import com.attendo.ui.longLabel
 import com.attendo.ui.shortLabel
 import com.attendo.ui.theme.bands
+import com.attendo.data.update.UpdateState
 import java.time.LocalDate
 
 /**
@@ -75,6 +81,8 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    var dialog by remember { mutableStateOf<DashboardDialog?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         AttendoTopBar(
@@ -92,6 +100,23 @@ fun DashboardScreen(
                 }
             },
         )
+
+        // The update card, on the screen the app opens on. When the launch-time check —
+        // cached or fresh — has something to say, it is said here, not held until the
+        // student happens to visit Settings. It is the same card and the same state as
+        // the Updates section renders, and it disappears the same way too: dismissed, or
+        // installed.
+        if (updateState !is UpdateState.Idle) {
+            UpdateCard(
+                state = updateState,
+                onDownload = viewModel::downloadUpdate,
+                onCancelDownload = viewModel::cancelUpdateDownload,
+                onInstall = viewModel::installUpdate,
+                onDismiss = viewModel::dismissUpdate,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+            )
+        }
+
         when {
             !state.loaded -> LoadingPane()
 
@@ -116,9 +141,118 @@ fun DashboardScreen(
                 onApproveToday = viewModel::approveToday,
                 onOpenDay = onOpenDay,
                 onOpenCourse = onOpenCourse,
+                onMarkBacklogAbsent = {
+                    dialog = DashboardDialog.MissedBacklog(
+                        dates = state.backlog,
+                    )
+                },
+                onOpenBulkCancel = {
+                    dialog = DashboardDialog.CancelBacklog(
+                        dates = state.backlog,
+                    )
+                },
             )
         }
     }
+
+    DashboardDialogHost(
+        dialog = dialog,
+        onDismiss = { dialog = null },
+        onMarkBacklogAbsent = viewModel::markBacklogAbsent,
+        onCancelBacklog = viewModel::cancelBacklog,
+    )
+}
+
+/** Which backlog dialog is open on the dashboard. */
+private sealed interface DashboardDialog {
+    data class MissedBacklog(val dates: List<LocalDate>) : DashboardDialog
+    data class CancelBacklog(val dates: List<LocalDate>) : DashboardDialog
+}
+
+@Composable
+private fun DashboardDialogHost(
+    dialog: DashboardDialog?,
+    onDismiss: () -> Unit,
+    onMarkBacklogAbsent: () -> Unit,
+    onCancelBacklog: (CancellationReason) -> Unit,
+) {
+    when (dialog) {
+        null -> Unit
+
+        is DashboardDialog.MissedBacklog -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Miss all of them?") },
+            text = {
+                Text(
+                    "Every unmarked class from ${dialog.dates.first().shortLabel()} to " +
+                        "${dialog.dates.last().shortLabel()} will be recorded as missed. " +
+                        "They still count as held, so they lower your attendance.\n\n" +
+                        "Classes you have already marked are left alone.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onMarkBacklogAbsent()
+                    onDismiss()
+                }) {
+                    Text("I missed all of them")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            },
+        )
+
+        is DashboardDialog.CancelBacklog -> CancelReasonDialog(
+            body = "Every unmarked class from ${dialog.dates.first().shortLabel()} to " +
+                "${dialog.dates.last().shortLabel()} stops counting, on both sides " +
+                "of the fraction.\n\n" +
+                "Classes you have already marked are left alone.",
+            onPick = { reason ->
+                onCancelBacklog(reason)
+                onDismiss()
+            },
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+/**
+ * Why a stretch of classes did not happen. Reused from the day review screen — the
+ * reason is what separates a holiday from a stretch the faculty did not turn up for.
+ */
+@Composable
+private fun CancelReasonDialog(
+    body: String,
+    onPick: (CancellationReason) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Cancel every unmarked class?") },
+        text = {
+            Column {
+                Text(body, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(16.dp))
+                listOf(
+                    CancellationReason.FACULTY_CANCELLED to "Faculty cancelled them",
+                    CancellationReason.HOLIDAY to "Holiday",
+                    CancellationReason.OTHER to "Something else",
+                ).forEach { (reason, label) ->
+                    TextButton(
+                        onClick = { onPick(reason) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(label, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
@@ -127,6 +261,8 @@ private fun DashboardContent(
     onApproveToday: () -> Unit,
     onOpenDay: (LocalDate) -> Unit,
     onOpenCourse: (Long) -> Unit,
+    onMarkBacklogAbsent: () -> Unit,
+    onOpenBulkCancel: () -> Unit,
 ) {
     val overall = state.overall ?: return
     LazyColumn(
@@ -170,6 +306,8 @@ private fun DashboardContent(
                 BacklogCard(
                     dates = state.backlog,
                     onOpen = { onOpenDay(state.backlog.first()) },
+                    onMarkAllAbsent = onMarkBacklogAbsent,
+                    onOpenBulkCancel = onOpenBulkCancel,
                 )
             }
         }
@@ -198,11 +336,18 @@ private fun DashboardContent(
  * Unreviewed sessions are invisible to the percentage, which is the kind decision but also
  * a silent one — without this card a student could sit at "100%" for a fortnight having
  * marked nothing at all.
+ *
+ * Beyond the review button there are two bulk ways out, both shown only when the backlog
+ * spans more than one day (a single day is what the review button itself handles):
+ * mark the lot as missed, or cancel the lot. Deliberately absent is any way to *ignore*
+ * the backlog — unmarked hours are not a rounding problem the app can quietly dispose of.
  */
 @Composable
 private fun BacklogCard(
     dates: List<LocalDate>,
     onOpen: () -> Unit,
+    onMarkAllAbsent: () -> Unit,
+    onOpenBulkCancel: () -> Unit,
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -216,15 +361,30 @@ private fun BacklogCard(
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                text = "Oldest: ${dates.first().shortLabel()}. Unmarked classes count " +
-                    "for nothing on either side of the fraction until you review them.",
+                text = "You have classes from earlier dates that haven't been reviewed " +
+                    "yet — ${dates.first().shortLabel()} to ${dates.last().shortLabel()}. " +
+                    "Unmarked classes count for nothing on either side of the fraction " +
+                    "until you review them.",
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(12.dp))
-            FilledTonalButton(onClick = onOpen) {
-                Text("Review ${dates.first().shortLabel()}")
-                Spacer(Modifier.size(8.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FilledTonalButton(onClick = onOpen) {
+                    Text("Review ${dates.first().shortLabel()}")
+                    Spacer(Modifier.size(8.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                }
+                if (dates.size > 1) {
+                    TextButton(onClick = onOpenBulkCancel) { Text("More…") }
+                }
+            }
+            if (dates.size > 1) {
+                TextButton(onClick = onMarkAllAbsent) {
+                    Text("I missed all of them")
+                }
             }
         }
     }

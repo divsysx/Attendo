@@ -148,6 +148,17 @@ class SettingsStore(context: Context) {
         putString(KEY_JOINED_ON, settings.attendanceStart.joinedOn?.toString())
     }
 
+    /**
+     * Re-reads the file into the flow, for after [com.attendo.data.AppReset] has cleared it.
+     *
+     * Nothing here writes, so there is no reason for any other caller: the store's own
+     * setters refresh through [edit], and a reset is the one event that changes the file
+     * from outside the store.
+     */
+    fun reload() {
+        _settings.value = read()
+    }
+
     private inline fun edit(block: SharedPreferences.Editor.() -> Unit) {
         prefs.edit().apply(block).apply()
         // Re-read rather than patching the cached copy, so the flow can never drift from

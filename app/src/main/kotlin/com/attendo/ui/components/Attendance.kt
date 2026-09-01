@@ -252,7 +252,7 @@ fun BandLegend(
         DayMark.FULL to "Full",
         DayMark.PARTIAL to "Part",
         DayMark.ABSENT to "Missed",
-        DayMark.AWAITING_REVIEW to "To review",
+        DayMark.AWAITING_REVIEW to "To mark",
         DayMark.ALL_CANCELLED to "Cancelled",
         // Only ever present when the student's attendance starts after the term did, or when
         // an archived semester's month is on screen. Named plainly, because a grey day the

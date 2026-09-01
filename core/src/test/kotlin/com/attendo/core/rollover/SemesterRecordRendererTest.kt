@@ -294,7 +294,7 @@ class SemesterRecordRendererTest {
     }
 
     @Test
-    fun `a held session is labelled Held and carries its planned and attended units`() {
+    fun `a held session is labelled Present or carries its attended fraction`() {
         val sessions = listOf(
             held(A_ID, LocalDate.of(2026, 8, 3), 9, 2, attended = 1),
         )
@@ -306,7 +306,33 @@ class SemesterRecordRendererTest {
         assertEquals("ADEC", row.courseCode)
         assertEquals(2, row.unitsPlanned)
         assertEquals(1, row.unitsAttended)
-        assertEquals("Held", row.statusLabel)
+        assertEquals("1 of 2", row.statusLabel)
+    }
+
+    @Test
+    fun `a missed session is labelled Missed rather than Held`() {
+        val sessions = listOf(
+            held(A_ID, LocalDate.of(2026, 8, 3), 9, 2, attended = 0),
+        )
+
+        val doc = render(courses = listOf(courseA), sessions = sessions)
+        val row = doc.sessions.single()
+
+        // The record exists to be shown to faculty; a class the student missed must say so.
+        assertEquals("Missed", row.statusLabel)
+        assertEquals(0, row.unitsAttended)
+    }
+
+    @Test
+    fun `a fully attended session is labelled with its hours`() {
+        val sessions = listOf(
+            held(A_ID, LocalDate.of(2026, 8, 3), 9, 2, attended = 2),
+            held(A_ID, LocalDate.of(2026, 8, 4), 10, 1, attended = 1),
+        )
+
+        val doc = render(courses = listOf(courseA), sessions = sessions)
+
+        assertEquals(listOf("All 2", "Present"), doc.sessions.map { it.statusLabel })
     }
 
     @Test
@@ -324,7 +350,7 @@ class SemesterRecordRendererTest {
     }
 
     @Test
-    fun `a scheduled session is labelled Scheduled`() {
+    fun `a scheduled session is labelled To mark`() {
         val sessions = listOf(
             scheduled(A_ID, LocalDate.of(2026, 8, 3), 9, 2),
         )
@@ -332,7 +358,7 @@ class SemesterRecordRendererTest {
         val doc = render(courses = listOf(courseA), sessions = sessions)
         val row = doc.sessions.single()
 
-        assertEquals("Scheduled", row.statusLabel)
+        assertEquals("To mark", row.statusLabel)
         assertEquals(0, row.unitsAttended)
     }
 

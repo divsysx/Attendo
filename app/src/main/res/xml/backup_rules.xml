@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Cloud backup (API 23-30). The whole point of backing this app up is not losing a
-  semester of attendance, so the Room database is included and nothing is excluded.
+  Cloud backup (API 23-30). These are the rules Android applies when AttendoBackupAgent
+  lets a pass through — that is, when the student has "Automatic backup" on.
 
   `attendo.db-wal` is listed as well as the database. Room runs in WAL mode, so a write
   lives in the log until SQLite checkpoints; the app checkpoints whenever it leaves the
   foreground (AppContainer.checkpoint), and backing the log up covers the case where it
   was killed before that ran. The `-shm` file is deliberately left out — it is a scratch
   index that SQLite rebuilds, and a stale copy is worse than none.
+
+  The toggle itself lives in `attendo-android-backup.xml`, and it travels in the backup so
+  a restored install keeps the choice it was backed up under; `attendo-appearance.xml`
+  rides along for the same reason — a look is a choice too.
 -->
 <full-backup-content>
     <include domain="database" path="attendo.db" />
     <include domain="database" path="attendo.db-wal" />
     <include domain="sharedpref" path="attendo-settings.xml" />
+    <include domain="sharedpref" path="attendo-android-backup.xml" />
+    <include domain="sharedpref" path="attendo-appearance.xml" />
 </full-backup-content>

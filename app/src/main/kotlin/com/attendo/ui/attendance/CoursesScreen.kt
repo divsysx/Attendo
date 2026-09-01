@@ -155,8 +155,8 @@ fun CoursesScreen(
     confirmDelete?.let { course ->
         ConfirmDialog(
             title = "Delete ${course.code}?",
-            body = "Every class and every mark for this course goes with it. Archiving keeps " +
-                "the record and stops it counting.",
+            body = "Every class and every attendance record for this course goes with it. " +
+                "Archiving keeps the record and stops it counting.",
             confirmLabel = "Delete",
             onConfirm = { viewModel.delete(course) },
             onDismiss = { confirmDelete = null },

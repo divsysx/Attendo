@@ -60,6 +60,7 @@ import com.attendo.ui.components.KindTag
 import com.attendo.ui.components.LoadingPane
 import com.attendo.ui.components.MarkSwatch
 import com.attendo.ui.components.UnitToggles
+import com.attendo.ui.classes
 import com.attendo.ui.hours
 import com.attendo.ui.label
 import com.attendo.ui.longLabel
@@ -78,7 +79,7 @@ import java.time.LocalDate
  * that. The dashboard's one-tap path handles the common day; this screen handles every
  * other one — a class cancelled, a lab shortened, a lecture moved to Saturday.
  *
- * Toggling a chip does not commit the day. Marks and status are separate in
+ * Toggling a chip does not commit the day. Attendance and status are separate in
  * [com.attendo.core.engine.SessionOps] precisely so a student can set the whole day up and
  * then approve it, rather than each tap being a decision that counts immediately.
  */
@@ -151,6 +152,7 @@ private fun DayContent(
                 DaySummaryCard(
                     state = state,
                     onApproveAll = viewModel::approveAll,
+                    onMarkAllAbsent = { onDialog(DayDialog.MissedAll) },
                     onCancelAll = { onDialog(DayDialog.CancelAll) },
                 )
             }
@@ -239,6 +241,7 @@ private fun DayStepper(
 private fun DaySummaryCard(
     state: DayReviewUiState,
     onApproveAll: () -> Unit,
+    onMarkAllAbsent: () -> Unit,
     onCancelAll: () -> Unit,
 ) {
     val day = state.day
@@ -274,7 +277,7 @@ private fun DaySummaryCard(
             if (state.isFuture) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Still to come. Mark it once the day has happened.",
+                    text = "Still to come. Mark it once the day is over.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -285,6 +288,9 @@ private fun DaySummaryCard(
                         Icon(AttendoIcons.DoneAll, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
                         Text("Mark all present · ${hours(state.unitsPending)}")
+                    }
+                    TextButton(onClick = onMarkAllAbsent, modifier = Modifier.fillMaxWidth()) {
+                        Text("I missed this whole day")
                     }
                 }
                 TextButton(onClick = onCancelAll) { Text("Cancel the whole day") }
@@ -475,6 +481,7 @@ private sealed interface DayDialog {
     data object PickDate : DayDialog
     data object AddExtra : DayDialog
     data object CancelAll : DayDialog
+    data object MissedAll : DayDialog
     data class Cancel(val row: DayRow) : DayDialog
     data class Resize(val row: DayRow) : DayDialog
     data class Move(val row: DayRow) : DayDialog
@@ -500,13 +507,37 @@ private fun DayDialogHost(
 
         DayDialog.CancelAll -> CancelReasonDialog(
             title = "Cancel every class",
-            body = "All ${state.rows.size} classes on ${state.date.shortLabel()} stop counting, " +
-                "on both sides of the fraction.",
+            body = "All ${classes(state.rows.size)} on ${state.date.shortLabel()} stop " +
+                "counting, on both sides of the fraction.",
             onPick = { reason ->
                 viewModel.cancelAll(reason)
                 onDismiss()
             },
             onDismiss = onDismiss,
+        )
+
+        DayDialog.MissedAll -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Miss the whole day?") },
+            text = {
+                Text(
+                    "Every class still to be marked on ${state.date.shortLabel()} will be " +
+                        "recorded as missed — ${hours(state.unitsPending)} in all. They still " +
+                        "count as held, so they lower your attendance.\n\n" +
+                        "Classes you have already marked are left alone.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.markAllAbsent()
+                    onDismiss()
+                }) {
+                    Text("I missed them all")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            },
         )
 
         is DayDialog.Cancel -> CancelReasonDialog(
@@ -608,9 +639,7 @@ private fun CancelReasonDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
-}
-
-/** A two-hour lab that ran for one. Re-clamps the mask in `:core`, so hours cannot be lost. */
+}/** A two-hour lab that ran for one. Re-clamps the mask in `:core`, so hours cannot be lost. */
 @Composable
 private fun ResizeDialog(
     row: DayRow,
@@ -750,8 +779,8 @@ private fun RescheduleDialog(
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "The original stays on record as moved, so the week you missed it " +
-                        "still reads correctly.",
+                    text = "The original stays on record as moved, so the week it was " +
+                        "timetabled for still reads correctly.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -219,6 +219,25 @@ object SessionOps {
     /** The bulk action behind "Approve All": commits every still-pending row. */
     fun approveAll(sessions: List<ClassSession>, now: Instant): List<ClassSession> =
         sessions.map { if (it.isAwaitingReview) approve(it, now) else it }
+
+    /**
+     * The bulk action behind "I missed the whole day": records every still-pending row as
+     * held but unattended. Rows already dealt with — attended, cancelled, anything — are
+     * left exactly as they are; a decision already made is not overwritten by a bulk one.
+     */
+    fun markAllAbsent(sessions: List<ClassSession>, now: Instant): List<ClassSession> =
+        sessions.map { if (it.isAwaitingReview) markAbsent(it, now) else it }
+
+    /**
+     * The bulk action behind "cancel everything still pending": cancels every
+     * still-pending row with [reason]. Like [markAllAbsent], rows already dealt with keep
+     * whatever the student said about them.
+     */
+    fun cancelAll(
+        sessions: List<ClassSession>,
+        reason: CancellationReason,
+        now: Instant,
+    ): List<ClassSession> = sessions.map { if (it.isAwaitingReview) cancel(it, reason, now) else it }
 }
 
 /** The two rows a reschedule produces. */

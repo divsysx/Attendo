@@ -183,8 +183,8 @@ private fun SeedContent(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = "The grid puts ${state.section} in two places at these hours. " +
-                                "Usually that means a batch still to choose — the classes are " +
-                                "created either way, and the ones you do not attend can be " +
+                                "Usually that means you still have a batch to pick — the classes " +
+                                "are created either way, and the ones you do not attend can be " +
                                 "cancelled or the course archived.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -216,7 +216,7 @@ private fun SeedContent(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = "${hours(state.unitsChosen)} a week, and the classes since " +
-                                "term started will be waiting to mark.",
+                                "the semester started will be waiting to mark.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -229,7 +229,8 @@ private fun SeedContent(
             item {
                 Text(
                     text = "${state.problems} line${if (state.problems == 1) "" else "s"} of the " +
-                        "timetable could not be read. Anything they described is missing here.",
+                        "timetable could not be read, so whatever ${if (state.problems == 1) "it" else "they"} " +
+                        "listed is missing here.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )

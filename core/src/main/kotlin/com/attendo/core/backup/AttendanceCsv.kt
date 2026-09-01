@@ -33,8 +33,10 @@ object AttendanceCsv {
 
     const val MIME_TYPE: String = "text/csv"
 
+    // Column names are words the user has seen: the app says "hours planned" and "hours
+    // attended" everywhere, and this file is the one export a student opens in a spreadsheet.
     const val HEADER: String = "date,day,course_code,course_name,kind,start_hour,slot," +
-        "units_planned,units_attended,percent,status,cancellation_reason,origin,room,note"
+        "hours_planned,hours_attended,percent,status,cancellation_reason,origin,room,note"
 
     /** `attendo-attendance-2026-08-19.csv` */
     fun suggestedFileName(on: LocalDate): String = "attendo-attendance-$on.csv"

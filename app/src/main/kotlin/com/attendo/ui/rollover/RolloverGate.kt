@@ -127,7 +127,7 @@ private fun RolloverChoice(
         Text(
             text = "This device still holds ${state.current.label}, but this version of Attendo " +
                 "carries ${state.bundled.label}. Start the new semester to switch over — the " +
-                "previous term's data is removed from this device, so save a copy first.",
+                "previous semester's data is removed from this device, so save a copy first.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -136,7 +136,7 @@ private fun RolloverChoice(
         Spacer(Modifier.height(4.dp))
 
         Button(onClick = onExportPdf, modifier = Modifier.fillMaxWidth()) {
-            Text("Export Semester Record")
+            Text("Export semester record")
         }
         OutlinedButton(onClick = onExportBackup, modifier = Modifier.fillMaxWidth()) {
             Text("Export full backup")
@@ -169,11 +169,11 @@ private fun StartConfirmation(
             Text(
                 text = if (exportedThisSession) {
                     "Your previous semester's courses, timetable and attendance will be removed " +
-                        "from this device. The new semester, with its term dates and targets, " +
+                        "from this device. The new semester, with its dates and targets, " +
                         "takes their place."
                 } else {
                     "Your previous semester's attendance will be removed from this device and " +
-                        "cannot be recovered from Attendo after this. Export a Semester Record or " +
+                        "cannot be recovered from Attendo after this. Export a semester record or " +
                         "a full backup first if you have not already."
                 },
                 style = MaterialTheme.typography.bodyMedium,

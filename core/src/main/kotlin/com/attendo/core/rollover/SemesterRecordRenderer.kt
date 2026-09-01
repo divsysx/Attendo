@@ -40,8 +40,10 @@ data class CourseRow(
  * are the headline, but the row-by-row history is the detail a student needs to challenge a
  * faculty's register or reconstruct a disputed day.
  *
- * [statusLabel] is a printed word ("Held", "Cancelled", "Scheduled") rather than the enum, so the
- * PDF rendering layer does not have to know the engine's vocabulary. [unitsAttended] is reported
+ * [statusLabel] is a printed word ("Present", "1 of 2 hours", "Missed", "Cancelled", "To mark")
+ * rather than the enum, so the PDF rendering layer does not have to know the engine's
+ * vocabulary. It uses the same words the app's own rows do, so the printed record never
+ * disagrees with what the student has been looking at on screen. [unitsAttended] is reported
  * as zero unless the session was [SessionStatus.HELD]: a SCHEDULED row carries a pre-filled
  * present mask, but it is a class nobody decided, so printing its mask count would read as
  * attendance that was never recorded.
@@ -176,17 +178,23 @@ private fun CourseStats.toRow(): CourseRow = CourseRow(
 /** Maps a session to a printable row, resolving its course code from [courses]. */
 private fun ClassSession.toRow(courses: List<Course>): SessionRow {
     val code = courses.firstOrNull { it.id == courseId }?.code ?: "—"
-    val label = when (status) {
-        SessionStatus.HELD -> "Held"
-        SessionStatus.CANCELLED -> "Cancelled"
-        SessionStatus.SCHEDULED -> "Scheduled"
+    val attended = if (status == SessionStatus.HELD) unitsAttended else 0
+    // The same words the app's session rows print, so the record and the screen never
+    // disagree about what happened. A class the student missed is the important case: it
+    // is HELD — the hours count on both sides — and must print "Missed", not "Held".
+    val label = when {
+        status == SessionStatus.CANCELLED -> "Cancelled"
+        status == SessionStatus.SCHEDULED -> "To mark"
+        attended == unitsPlanned -> if (unitsPlanned == 1) "Present" else "All $unitsPlanned"
+        attended == 0 -> "Missed"
+        else -> "$attended of $unitsPlanned"
     }
     return SessionRow(
         date = date,
         courseCode = code,
         startHour = startHour,
         unitsPlanned = unitsPlanned,
-        unitsAttended = if (status == SessionStatus.HELD) unitsAttended else 0,
+        unitsAttended = attended,
         statusLabel = label,
     )
 }

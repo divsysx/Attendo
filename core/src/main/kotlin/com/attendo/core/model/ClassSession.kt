@@ -2,6 +2,7 @@ package com.attendo.core.model
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * How a session came to exist.
@@ -164,6 +165,29 @@ data class ClassSession(
      * about a date, asked of a row whose status already answered the other half.
      */
     fun isReviewableOn(today: LocalDate): Boolean = isAwaitingReview && !date.isAfter(today)
+
+    /**
+     * Whether the *backlog* may ask about this class as of [now] — the catch-up queue and
+     * its bulk actions, not the day's own review.
+     *
+     * The difference from [isReviewableOn] is today. A class dated before today is
+     * backlog material the moment it exists. A class dated today joins only once its
+     * last hour has ended — a class still running or still to come is today's business,
+     * not something to sweep up as missed: at ten past nine, the nine o'clock lecture is
+     * either happening or about to, and "I missed all of them" has no honest answer for
+     * it yet. (The teaching day starts at nine, so a class ending later than the current
+     * hour has not finished; the boundary is inclusive — the hour a class ends in makes
+     * it eligible.) Dates after today never qualify.
+     */
+    fun isBacklogEligibleOn(now: LocalDateTime): Boolean {
+        if (!isAwaitingReview) return false
+        val today = now.toLocalDate()
+        return when {
+            date.isBefore(today) -> true
+            date.isAfter(today) -> false
+            else -> endHour <= now.hour
+        }
+    }
 
     val wasRescheduledAway: Boolean
         get() = status == SessionStatus.CANCELLED &&

@@ -10,16 +10,24 @@ import com.attendo.core.model.AcademicCalendar
 import com.attendo.core.model.AttendanceBasis
 import com.attendo.core.model.AttendanceStart
 import com.attendo.core.model.Percent
+import com.attendo.core.update.UpdateCheckOutcome
+import com.attendo.core.update.UpdateManifest
 import com.attendo.data.AppSettings
+import com.attendo.data.Appearance
+import com.attendo.data.AppearanceStore
 import com.attendo.data.AppVersion
 import com.attendo.data.AttendanceRepository
 import com.attendo.data.SettingsStore
 import com.attendo.data.TimetableRepository
+import com.attendo.data.ThemePreference
+import com.attendo.data.update.UpdateManager
+import com.attendo.data.update.UpdateState
 import com.attendo.ui.container
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
@@ -39,6 +47,8 @@ data class SettingsUiState(
     val problems: List<ImportProblem> = emptyList(),
     /** This build, for the About block. The product is "Attendo"; this is only its version. */
     val version: AppVersion = AppVersion(name = "", code = 0L),
+    /** The update section: hidden entirely unless this build has an update source. */
+    val update: UpdatePanel = UpdatePanel(),
 ) {
     val calendar: AcademicCalendar get() = settings.calendar
 
@@ -70,6 +80,33 @@ data class SettingsUiState(
 }
 
 /**
+ * The update section's own small state: whether a manual check is running, and what the
+ * last one said. The update *flow* itself — available, downloading, ready — is
+ * [UpdateState], straight from the [UpdateManager], because it belongs to the app and not
+ * to this screen.
+ */
+data class UpdatePanel(
+    /** Whether this build has an update source at all. The section hides when false. */
+    val supported: Boolean = false,
+    val checking: Boolean = false,
+    /** The last manual check's one-line answer. Null while checking or before any check. */
+    val checkResult: CheckResult? = null,
+) {
+    /** What a manual check can conclude, in the words the section shows. */
+    enum class CheckResult {
+        /**
+         * "No update available." — said after a *successful* check, and identically
+         * whether the installed build matches the latest release or is ahead of it
+         * (a local build of an unpublished release). Never the answer to a failed check.
+         */
+        UP_TO_DATE,
+
+        /** A check that could not complete — offline, or GitHub unreachable. */
+        FAILED,
+    }
+}
+
+/**
  * The term's shape: targets, dates, holidays.
  *
  * Every write here changes what the timetable implies, so each one is followed by the
@@ -82,10 +119,25 @@ class SettingsViewModel(
     private val settings: SettingsStore,
     private val timetables: TimetableRepository,
     private val version: AppVersion,
+    private val updates: UpdateManager? = null,
+    private val appearanceStore: AppearanceStore,
     private val clock: () -> LocalDate = LocalDate::now,
 ) : ViewModel() {
 
     private val problems = MutableStateFlow<List<ImportProblem>>(emptyList())
+
+    private val updatePanel = MutableStateFlow(UpdatePanel(supported = updates?.supported == true))
+
+    /** The update flow's state, or nothing when this build has no update source. */
+    val updateState: StateFlow<UpdateState> =
+        updates?.state ?: MutableStateFlow(UpdateState.Idle).asStateFlow()
+
+    /**
+     * What the app looks like. Exposed straight from the store, like [updateState], rather
+     * than folded into [state]: MainActivity follows the same flow to theme the whole app,
+     * and a preference that must agree in two places should be one value, not two copies.
+     */
+    val appearance: StateFlow<Appearance> = appearanceStore.appearance
 
     init {
         viewModelScope.launch { problems.value = timetables.timetable().problems }
@@ -96,7 +148,8 @@ class SettingsViewModel(
         problems,
         attendance.courses,
         attendance.sessions,
-    ) { appSettings, importProblems, courses, sessions ->
+        updatePanel,
+    ) { appSettings, importProblems, courses, sessions, panel ->
         val today = clock()
         val calendar = appSettings.calendar
         SettingsUiState(
@@ -111,6 +164,7 @@ class SettingsViewModel(
             markedSessions = sessions.count { !it.isAwaitingReview },
             problems = importProblems,
             version = version,
+            update = panel,
         )
     }
         .flowOn(Dispatchers.Default)
@@ -195,6 +249,45 @@ class SettingsViewModel(
      */
     fun setDisplayName(name: String) = settings.setDisplayName(name)
 
+    /**
+     * Theme and dynamic colours. Both just record the choice — the flow MainActivity
+     * follows does the rest, and there is nothing here to correct or resync, which is
+     * the point of keeping the theme decision in one place.
+     */
+    fun setTheme(theme: ThemePreference) = appearanceStore.setTheme(theme)
+
+    fun setDynamicColors(enabled: Boolean) = appearanceStore.setDynamicColors(enabled)
+
+    /**
+     * "Check for updates", pressed. An instruction, not a poll: never throttled, and it
+     * gets an answer even when the answer is that the check could not complete — which the
+     * quiet background check deliberately never says.
+     */
+    fun checkForUpdates() {
+        val manager = updates ?: return
+        if (updatePanel.value.checking) return
+        viewModelScope.launch {
+            updatePanel.value = updatePanel.value.copy(checking = true, checkResult = null)
+            val result = when (manager.checkNow()) {
+                is UpdateCheckOutcome.Available -> null // The card answers; a line would echo it.
+                is UpdateCheckOutcome.UpToDate -> UpdatePanel.CheckResult.UP_TO_DATE
+                is UpdateCheckOutcome.Failed -> UpdatePanel.CheckResult.FAILED
+            }
+            updatePanel.value = updatePanel.value.copy(checking = false, checkResult = result)
+        }
+    }
+
+    /** Starts downloading the offered update. The manager owns everything from here. */
+    fun downloadUpdate(manifest: UpdateManifest) = updates?.download(manifest)
+
+    fun cancelUpdateDownload() = updates?.cancelDownload()
+
+    /** Hands the verified APK to Android's installer — which then asks the student. */
+    fun installUpdate() = updates?.install()
+
+    /** "Not now": remembered against this version, so it is not re-offered unprompted. */
+    fun dismissUpdate() = updates?.dismiss()
+
     private fun resync() {
         viewModelScope.launch {
             attendance.syncSessions(settings.current.calendar, clock())
@@ -211,6 +304,8 @@ class SettingsViewModel(
                     container.settings,
                     container.timetable,
                     container.version,
+                    container.updates,
+                    container.appearance,
                 )
             }
         }

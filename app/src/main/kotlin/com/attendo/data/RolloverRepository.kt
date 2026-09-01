@@ -211,7 +211,7 @@ class RolloverRepository(
         ) {
             return RolloverResult.Failed(
                 message = "Your previous semester was cleared and the new one started, but the " +
-                    "term dates and targets were not saved. Check them in Settings.",
+                    "semester dates and targets were not saved. Check them in Settings.",
                 dataUnchanged = false,
             )
         }

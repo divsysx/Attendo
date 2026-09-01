@@ -11,21 +11,28 @@ import com.attendo.core.engine.OverallStats
 import com.attendo.core.engine.SessionGenerator
 import com.attendo.core.model.AttendanceBasis
 import com.attendo.core.model.AttendanceWindow
+import com.attendo.core.model.CancellationReason
 import com.attendo.core.model.Course
 import com.attendo.core.model.Semester
+import com.attendo.core.update.UpdateManifest
 import com.attendo.data.AppSettings
 import com.attendo.data.AttendanceRepository
 import com.attendo.data.SemesterRepository
 import com.attendo.data.SettingsStore
+import com.attendo.data.update.UpdateManager
+import com.attendo.data.update.UpdateState
 import com.attendo.ui.container
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class DashboardUiState(
     val today: LocalDate = LocalDate.now(),
@@ -37,7 +44,7 @@ data class DashboardUiState(
     val semester: Semester? = null,
     /** The dates [overall] counts. Worth showing when it is not the whole semester. */
     val window: AttendanceWindow = AttendanceWindow.OPEN,
-    /** Past dates still holding unmarked classes, oldest first. */
+    /** Dates holding unmarked backlog classes, oldest first — today only once its classes have finished. */
     val backlog: List<LocalDate> = emptyList(),
     val todayPlan: DayPlan? = null,
     val anyCourses: Boolean = false,
@@ -51,7 +58,7 @@ data class DashboardUiState(
     /**
      * What the headline percentage covers — shown only when it is narrower than the semester.
      *
-     * Silence when the window is the whole term: a line saying "counted from the start of term"
+     * Silence when the window is the whole semester: a line saying "counted from the start of semester"
      * under every student's figure is noise. A student counting from their joining date, or one
      * with no semester set up, is looking at something narrower than they might assume, and that
      * is worth a line.
@@ -60,7 +67,7 @@ data class DashboardUiState(
         get() = when {
             settings.attendanceStart.basis == AttendanceBasis.PERSONAL &&
                 settings.attendanceStart.joinedOn != null ->
-                "${semester?.label ?: "All courses"} · counted from ${window.label}"
+                "${semester?.label ?: "All courses"} · counted ${window.label}"
 
             semester != null -> null
             else -> "No semester set up yet — counting every course you have."
@@ -87,8 +94,22 @@ class DashboardViewModel(
     private val attendance: AttendanceRepository,
     private val semesters: SemesterRepository,
     private val settings: SettingsStore,
-    private val clock: () -> LocalDate = LocalDate::now,
+    // A null manager is a Play-installed build: its state flow never leaves Idle, so no
+    // card shows and every action below is a no-op.
+    private val updates: UpdateManager? = null,
+    // A moment, not a date: today's classes join the backlog only after their scheduled
+    // end time, so the eligibility question needs the time of day as well.
+    private val clock: () -> LocalDateTime = LocalDateTime::now,
 ) : ViewModel() {
+
+    /**
+     * The update flow's state, exposed straight from the manager — the same flow
+     * Settings follows, so the card on this screen and the one in the Updates section
+     * are one truth, not two copies that could disagree. This is the screen the app
+     * opens on, which makes it where a launch-time check's answer is actually seen.
+     */
+    val updateState: StateFlow<UpdateState> =
+        updates?.state ?: MutableStateFlow(UpdateState.Idle).asStateFlow()
 
     val state: StateFlow<DashboardUiState> = combine(
         attendance.courses,
@@ -97,7 +118,8 @@ class DashboardViewModel(
         settings.settings,
         semesters.current,
     ) { courses, patterns, sessions, appSettings, semester ->
-        val today = clock()
+        val now = clock()
+        val today = now.toLocalDate()
         // Orphans — courses with no semester — are counted with the live one. They are the
         // hand-added course and the pre-semesters install, and they belong to no term, so
         // leaving them out would make a student's own courses silently vanish from their
@@ -127,7 +149,7 @@ class DashboardViewModel(
             // Windowed as well, because the backlog is a list of things to do. Classes held
             // before a student joined are not theirs to mark, and asking them to review three
             // weeks they were not enrolled for would be a queue that never empties.
-            backlog = AttendanceEngine.daysAwaitingReview(ownSessions, today, window),
+            backlog = AttendanceEngine.daysAwaitingReview(ownSessions, now, window),
             todayPlan = SessionGenerator.dayPlan(
                 date = today,
                 patterns = patterns.filter { it.courseId in activeIds },
@@ -146,16 +168,57 @@ class DashboardViewModel(
         // only place it is called from, so the sessions table catches up with the timetable
         // the moment the app is opened, however many days have been missed.
         viewModelScope.launch {
-            attendance.syncSessions(settings.current.calendar, clock())
+            attendance.syncSessions(settings.current.calendar, clock().toLocalDate())
         }
     }
 
     /** The one-tap path: everything today, marked fully attended. */
     fun approveToday() {
         viewModelScope.launch {
-            attendance.approveDay(clock(), settings.current.calendar)
+            attendance.approveDay(clock().toLocalDate(), settings.current.calendar)
         }
     }
+
+    /**
+     * The whole backlog in one stroke: every class still unmarked from the oldest pending
+     * date to the newest, recorded as missed.
+     *
+     * The range is the backlog's own span rather than "everything before today", so a day
+     * in the middle that is already fully marked contributes nothing — but nothing outside
+     * the student's window can be swept in either, because the backlog itself is windowed.
+     * Only backlog-*eligible* classes are touched: a class still running or still to come
+     * today is left for the day's own card — see [AttendanceRepository.markBacklogAbsent].
+     */
+    fun markBacklogAbsent() {
+        val dates = state.value.backlog
+        if (dates.isEmpty()) return
+        viewModelScope.launch {
+            attendance.markBacklogAbsent(dates.first(), dates.last(), settings.current.calendar, clock())
+        }
+    }
+
+    /** The whole backlog in one stroke: every still-unmarked eligible class cancelled with [reason]. */
+    fun cancelBacklog(reason: CancellationReason) {
+        val dates = state.value.backlog
+        if (dates.isEmpty()) return
+        viewModelScope.launch {
+            attendance.cancelBacklog(dates.first(), dates.last(), reason, settings.current.calendar, clock())
+        }
+    }
+
+    // The update card's actions. Each is one call into the manager, which owns everything
+    // from here — the same calls the Updates section in Settings makes, against the same
+    // state, so a download started on this screen is the download continued there.
+    /** Starts downloading the offered update. */
+    fun downloadUpdate(manifest: UpdateManifest) = updates?.download(manifest)
+
+    fun cancelUpdateDownload() = updates?.cancelDownload()
+
+    /** Hands the verified APK to Android's installer — which then asks the student. */
+    fun installUpdate() = updates?.install()
+
+    /** "Not now": remembered against this version, so it is not re-offered unprompted. */
+    fun dismissUpdate() = updates?.dismiss()
 
     companion object {
         private const val STOP_TIMEOUT_MS = 5_000L
@@ -166,6 +229,7 @@ class DashboardViewModel(
                     container.attendance,
                     container.semesters,
                     container.settings,
+                    container.updates,
                 )
             }
         }

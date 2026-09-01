@@ -3,6 +3,10 @@ package com.attendo
 import android.app.Application
 import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat
+import com.attendo.core.update.DistributionSource
+import com.attendo.data.AndroidBackupStore
+import com.attendo.data.AppearanceStore
+import com.attendo.data.AppReset
 import com.attendo.data.AppVersion
 import com.attendo.data.AttendanceRepository
 import com.attendo.data.BackupRepository
@@ -12,7 +16,14 @@ import com.attendo.data.SafetySnapshotStore
 import com.attendo.data.SemesterRepository
 import com.attendo.data.SettingsStore
 import com.attendo.data.TimetableRepository
+import com.attendo.data.analytics.UsageAnalytics
 import com.attendo.data.db.AttendoDatabase
+import com.attendo.data.update.DirectApkUpdateProvider
+import com.attendo.data.update.InstallSourceReader
+import com.attendo.data.update.UpdateCheckStore
+import com.attendo.data.update.UpdateFiles
+import com.attendo.data.update.UpdateManager
+import com.attendo.data.update.UpdateVerifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,6 +62,35 @@ class AppContainer(context: Context) {
 
     val settings: SettingsStore by lazy { SettingsStore(appContext) }
 
+    /**
+     * The "Automatic backup" toggle — read by this app's screens through the flow, and
+     * by [com.attendo.data.AttendoBackupAgent] straight from the same file, in the
+     * restricted-mode process Android runs backup passes in.
+     */
+    val androidBackup: AndroidBackupStore by lazy { AndroidBackupStore(appContext) }
+
+    /**
+     * What the app looks like. MainActivity follows this for the whole UI — there is one
+     * [com.attendo.ui.theme.AttendoTheme] at the root, not one per screen — which is also
+     * why it is held here: a preference that every screen needs is process state.
+     */
+    val appearance: AppearanceStore by lazy { AppearanceStore(appContext) }
+
+    /**
+     * The "Automatic backup" toggle's neighbour and opposite: everything the student has
+     * on this phone, and the one action that removes it. Held here because it needs the
+     * database and the settings store, and because it must run against the same instances
+     * the rest of the app holds — clearing a copy of the data nobody reads would be a
+     * convincing no-op.
+     */
+    val appReset: AppReset by lazy {
+        AppReset(
+            context = appContext,
+            database = { database },
+            settings = settings,
+        )
+    }
+
     /** Android's file picker, on the other side of a `content://` URI. */
     val documents: DocumentStore by lazy { DocumentStore(appContext.contentResolver) }
 
@@ -82,6 +122,35 @@ class AppContainer(context: Context) {
     }
 
     /**
+     * Aggregate, anonymous usage statistics — the app's entire analytics surface, held
+     * here so nothing else in the graph reaches Firebase directly.
+     */
+    val analytics: UsageAnalytics by lazy { UsageAnalytics(appContext) }
+
+    /**
+     * The update system, wired to whichever channel installed this build.
+     *
+     * A direct APK install (GitHub Releases, `adb`, a file manager) gets the direct APK
+     * provider — the flow that checks GitHub, downloads, verifies and hands to Android's
+     * installer. Anything installed by Google Play gets no provider at all: the manager
+     * then reports itself unsupported, Settings shows no update section, and Play's own
+     * in-app updates are the integration point left open for. See
+     * [com.attendo.data.update.UpdateProvider] for that boundary.
+     */
+    val updates: UpdateManager by lazy {
+        val source = InstallSourceReader(appContext).current()
+        UpdateManager(
+            context = appContext,
+            provider = if (source == DistributionSource.DIRECT_APK) DirectApkUpdateProvider() else null,
+            files = UpdateFiles(appContext),
+            verifier = UpdateVerifier(appContext),
+            analytics = analytics,
+            store = UpdateCheckStore(appContext),
+            scope = ioScope,
+        )
+    }
+
+    /**
      * Touches the two singletons the first screen needs, on a background thread.
      *
      * Both are lazy, and both do blocking work the first time they are asked for: Room
@@ -109,12 +178,15 @@ class AppContainer(context: Context) {
      * The database runs in WAL mode, so a committed write lands in `attendo.db-wal` and
      * only moves into `attendo.db` when SQLite checkpoints — which it does on close, or
      * once the log passes about a thousand pages. This app writes a handful of rows a day
-     * and is rarely closed, so weeks of marks can sit in the log.
+     * and is rarely closed, so weeks of attendance records can sit in the log.
      *
-     * That matters because a backup copies the files as they sit on disk. The log is
-     * backed up too, but a checkpoint whenever the app leaves the foreground means the
-     * `.db` alone is already complete, which is the state anything reading it from outside
-     * the app — a restore, a device transfer, an export — can rely on.
+     * A checkpoint whenever the app leaves the foreground means the `.db` alone is
+     * already complete, which is the state anything reading it from outside the app —
+     * the student's own export, a restore, a bug report's copy — can rely on. Android's
+     * automatic backup, for whoever turns it on in Settings, is another such reader:
+     * it copies `attendo.db` and its log as files, and a checkpointed pair is one whose
+     * restore needs no guessing. (The explicit backup file reads through the app rather
+     * than the raw files, so it never needed this.)
      */
     fun checkpoint() {
         if (!databaseDelegate.isInitialized() || !database.isOpen) return
@@ -155,5 +227,9 @@ class AttendoApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         container.warmUp()
+        // The quiet update check: at most once a day, off the main thread, and silent
+        // unless there is something worth showing. Never due to run? Then this does
+        // nothing but restore what the last successful check found.
+        container.updates.autoCheck()
     }
 }

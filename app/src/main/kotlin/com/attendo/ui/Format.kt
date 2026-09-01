@@ -84,11 +84,14 @@ fun Percent?.display(decimals: Int = 1): String = this?.let { "${it.format(decim
 /** "1 hour" / "3 hours" — attendance is counted in hours, so it is always spelt out. */
 fun hours(count: Int): String = "$count hour${if (count == 1) "" else "s"}"
 
-/** "2 units of 3" for the row under a session. */
+/** "2 of 3 hours" for the row under a session. */
 fun unitsOf(attended: Int, planned: Int): String = "$attended of ${hours(planned)}"
 
 /** "6 courses" / "1 course" */
 fun courses(count: Int): String = "$count course${if (count == 1) "" else "s"}"
+
+/** "6 classes" / "1 class" */
+fun classes(count: Int): String = "$count class${if (count == 1) "" else "es"}"
 
 /** "3 days" / "1 day" */
 fun days(count: Int): String = "$count day${if (count == 1) "" else "s"}"
@@ -101,9 +104,9 @@ fun days(count: Int): String = "$count day${if (count == 1) "" else "s"}"
  * Sundays, and working Saturdays, so this adds no calendar rule of its own.
  */
 internal fun AcademicCalendar.notTeachingReason(date: LocalDate): String = when {
-    !isWithinTerm(date) -> "Outside term"
+    !isWithinTerm(date) -> "Outside semester"
     date in holidays -> "Holiday"
     date.dayOfWeek == DayOfWeek.SUNDAY -> "Sunday"
-    date.dayOfWeek == DayOfWeek.SATURDAY -> "Saturday, and not a working one"
+    date.dayOfWeek == DayOfWeek.SATURDAY -> "Saturday (not a working one)"
     else -> "No classes"
 }

@@ -8,6 +8,7 @@ import com.attendo.core.model.Percent
 import com.attendo.core.model.Semester
 import com.attendo.core.model.SessionStatus
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * Attended and held units. Units — not classes — are the currency of this app: a
@@ -459,26 +460,26 @@ object AttendanceEngine {
             .sortedWith(compareBy({ it.date }, { it.startHour }))
 
     /**
-     * Past dates still holding unreviewed sessions, oldest first — the backlog
-     * behind the "N days awaiting review" nudge. Anything outside [window] is left out: a
+     * Dates still holding unreviewed *backlog* classes, oldest first — the queue behind
+     * the "N days awaiting review" nudge. Anything outside [window] is left out: a
      * student is not asked to review the fortnight before they joined.
      *
-     * Today is a reviewable date — [sessionsAwaitingReview] includes it — but it is
-     * deliberately not a *backlog* date. Today's classes already have the day's own card and
-     * its one-tap approve on the screen this list appears on, so listing today here would show
-     * a "catch up" nudge every teaching day and point it at something already in front of the
-     * student. What is dropped is only the day; the eligibility rule is
-     * [ClassSession.isReviewableOn]'s, so no future date can reach this list either.
+     * A date qualifies through [ClassSession.isBacklogEligibleOn], which is where
+     * today's line is drawn: a class scheduled today joins the backlog only once its
+     * last hour has ended, so the morning's classes are catch-up work by the afternoon
+     * while an in-progress or still-upcoming class stays off the list. Dates before
+     * today always qualify; dates after today never do. The date appears here when it
+     * holds at least one eligible class — today makes the list as soon as its first
+     * class finishes, not when the whole day is over.
      */
     fun daysAwaitingReview(
         sessions: Iterable<ClassSession>,
-        today: LocalDate,
+        now: LocalDateTime,
         window: AttendanceWindow = AttendanceWindow.OPEN,
     ): List<LocalDate> =
-        sessionsAwaitingReview(sessions, today, window)
-            .asSequence()
+        sessions.asSequence()
+            .filter { it.isBacklogEligibleOn(now) && it.date in window }
             .map { it.date }
-            .filterNot { it == today }
             .distinct()
             .sorted()
             .toList()

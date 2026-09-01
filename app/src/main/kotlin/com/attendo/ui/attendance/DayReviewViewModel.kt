@@ -129,6 +129,16 @@ class DayReviewViewModel(
         }
     }
 
+    /**
+     * Commits every pending row, drafts included, as missed — the day the student was
+     * absent for every class, not a day that did not happen.
+     */
+    fun markAllAbsent() {
+        viewModelScope.launch {
+            attendance.markDayAbsent(date.value, settings.current.calendar)
+        }
+    }
+
     /** Cancels every class on the day — the holiday nobody told you about. */
     fun cancelAll(reason: CancellationReason) {
         viewModelScope.launch {

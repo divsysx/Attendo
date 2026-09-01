@@ -1,8 +1,11 @@
 package com.attendo.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -10,6 +13,7 @@ import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.attendo.core.engine.DayMark
 
 /**
@@ -155,14 +159,35 @@ private val DarkBands = BandColors(
     onNone = DarkOnSurfaceVariant,
 )
 
+/**
+ * The app's one theme.
+ *
+ * [darkTheme] decides between the light and dark palettes; [dynamicColor] asks Android for
+ * the wallpaper-derived scheme on devices that have one (Android 12+), falling back to
+ * Attendo's own palettes everywhere else. The two are deliberately independent of the
+ * bands: a day's colour is *meaning* — full, partial, absent — and Android's wallpaper
+ * knows nothing about it, so [LocalBandColors] always comes from Attendo's own definitions.
+ * Dark mode still resolves them, as it always did.
+ */
 @Composable
 fun AttendoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+
+        darkTheme -> DarkScheme
+
+        else -> LightScheme
+    }
     CompositionLocalProvider(LocalBandColors provides if (darkTheme) DarkBands else LightBands) {
         MaterialTheme(
-            colorScheme = if (darkTheme) DarkScheme else LightScheme,
+            colorScheme = colorScheme,
             typography = AttendoTypography,
             content = content,
         )

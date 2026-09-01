@@ -160,7 +160,7 @@ private fun RoomsContent(
             item(key = "no-match") {
                 Text(
                     text = "No room called \"${state.filter}\". The timetable names " +
-                        "${state.roomCount} of them.",
+                        "${state.roomCount} rooms.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -170,7 +170,7 @@ private fun RoomsContent(
         if (state.isNonTeachingToday) {
             item(key = "non-teaching") {
                 Text(
-                    text = "Not a teaching day — ${state.notTodayReason}. " +
+                    text = "Not a teaching day — ${state.notTodayReason.lowercase()}. " +
                         "No rooms are in use today.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

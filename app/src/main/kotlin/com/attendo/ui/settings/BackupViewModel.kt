@@ -10,6 +10,8 @@ import com.attendo.core.backup.Backup
 import com.attendo.core.backup.BackupMessages
 import com.attendo.core.backup.BackupReadResult
 import com.attendo.core.backup.BackupSummary
+import com.attendo.data.AndroidBackupStore
+import com.attendo.data.AppReset
 import com.attendo.data.AttendanceRepository
 import com.attendo.data.BackupRepository
 import com.attendo.data.DocumentStore
@@ -37,7 +39,7 @@ data class BackupNotice(
 )
 
 /** The one long operation the screen is in the middle of, if any. */
-enum class BackupTask { EXPORTING, WRITING_CSV, READING, RESTORING, UNDOING }
+enum class BackupTask { EXPORTING, WRITING_CSV, READING, RESTORING, UNDOING, CLEARING }
 
 /** A backup file read and validated, waiting for the student to say yes. */
 data class PendingImport(
@@ -56,6 +58,12 @@ data class BackupUiState(
     val notice: BackupNotice? = null,
     /** Whether the last replacement can still be undone. */
     val canUndo: Boolean = false,
+    /**
+     * The "Automatic backup" toggle: whether Attendo's data may take part in Android's
+     * own backup. Off until the student turns it on, and the screen asks before turning
+     * it on — because it changes what an uninstall means.
+     */
+    val androidBackupEnabled: Boolean = false,
 ) {
     val busy: Boolean get() = task != null
 }
@@ -78,15 +86,49 @@ class BackupViewModel(
     private val checkpoint: () -> Unit,
     private val attendance: AttendanceRepository,
     private val settings: SettingsStore,
+    private val androidBackup: AndroidBackupStore,
+    private val appReset: AppReset,
     private val clock: () -> LocalDate = LocalDate::now,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(BackupUiState())
+    private val _state = MutableStateFlow(BackupUiState(androidBackupEnabled = androidBackup.enabled.value))
 
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
 
     init {
         refresh()
+    }
+
+    /**
+     * Flips the "Automatic backup" toggle.
+     *
+     * The screen asks for confirmation before enabling, not before disabling: turning it
+     * on is what makes an uninstall no longer a clean slate, and turning it off is the
+     * cautious direction. There is nothing to trigger on either side — Android decides
+     * when a pass runs — so this only records the choice that [com.attendo.data.AttendoBackupAgent]
+     * will read the next time one does.
+     */
+    fun setAndroidBackupEnabled(value: Boolean) {
+        androidBackup.setEnabled(value)
+        _state.update { it.copy(androidBackupEnabled = value) }
+    }
+
+    /**
+     * "Clear all data", confirmed.
+     *
+     * The screen's confirmation dialog has already been answered by the time this runs.
+     * The order is the whole safety story: everything is wiped and written to disk first,
+     * and only then does [AppReset.restartApp] kill the process and relaunch over a clean
+     * task stack — so nothing half-cleared is ever left for a screen to draw, and no
+     * ViewModel, repository or in-memory cache from before the reset survives it.
+     */
+    fun clearAllData() {
+        if (_state.value.busy) return
+        _state.update { it.copy(task = BackupTask.CLEARING, notice = null, pending = null) }
+        viewModelScope.launch {
+            appReset.clearEverything()
+            appReset.restartApp()
+        }
     }
 
     fun refresh() {
@@ -291,6 +333,8 @@ class BackupViewModel(
                     checkpoint = app::checkpoint,
                     attendance = app.attendance,
                     settings = app.settings,
+                    androidBackup = app.androidBackup,
+                    appReset = app.appReset,
                 )
             }
         }

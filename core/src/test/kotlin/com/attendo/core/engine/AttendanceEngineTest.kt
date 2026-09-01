@@ -417,18 +417,19 @@ class AttendanceEngineTest {
     }
 
     @Test
-    fun `days awaiting review lists past dates oldest first and excludes today`() {
+    fun `days awaiting review lists past dates oldest first and leaves an unfinished today out`() {
         val today = monday.plusDays(7)
         val sessions = listOf(
             heldSession(date = monday, status = SessionStatus.SCHEDULED),
             heldSession(date = monday.plusDays(3), status = SessionStatus.SCHEDULED),
             heldSession(date = monday.plusDays(3), status = SessionStatus.SCHEDULED, startHour = 14),
-            heldSession(date = today, status = SessionStatus.SCHEDULED),
+            heldSession(date = today, status = SessionStatus.SCHEDULED), // 9–10, still to come
             heldSession(date = today.plusDays(1), status = SessionStatus.SCHEDULED),
             heldSession(date = monday.plusDays(4)), // already held
         )
 
-        val backlog = AttendanceEngine.daysAwaitingReview(sessions, today)
+        // Nine sharp: today's 9–10 class has not ended, so today stays off the list.
+        val backlog = AttendanceEngine.daysAwaitingReview(sessions, today.atTime(9, 0))
 
         assertEquals(listOf(monday, monday.plusDays(3)), backlog)
     }

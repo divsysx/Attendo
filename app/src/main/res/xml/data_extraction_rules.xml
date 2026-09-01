@@ -2,18 +2,24 @@
 <!--
   Backup and device-to-device transfer rules for API 31+.
 
-  Both destinations carry the write-ahead log alongside the database; see backup_rules.xml
-  for why, and AppContainer.checkpoint for the other half of it.
+  Both destinations carry the write-ahead log alongside the database, the settings, the
+  "Automatic backup" toggle itself and the Appearance preference; see backup_rules.xml for
+  the reasoning and AttendoBackupAgent for why these rules only ever apply to a pass the
+  toggle allowed.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="database" path="attendo.db" />
         <include domain="database" path="attendo.db-wal" />
         <include domain="sharedpref" path="attendo-settings.xml" />
+        <include domain="sharedpref" path="attendo-android-backup.xml" />
+        <include domain="sharedpref" path="attendo-appearance.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="database" path="attendo.db" />
         <include domain="database" path="attendo.db-wal" />
         <include domain="sharedpref" path="attendo-settings.xml" />
+        <include domain="sharedpref" path="attendo-android-backup.xml" />
+        <include domain="sharedpref" path="attendo-appearance.xml" />
     </device-transfer>
 </data-extraction-rules>

@@ -1,19 +1,218 @@
 # Attendo
 
-Attendance tracking and room lookup for Faculty of Technology, University of Delhi.
+Attendance tracking and room lookup for students of the Faculty of Technology,
+University of Delhi.
 
 ⭐ If you find Attendo useful, consider leaving a star on the repository — it helps the project and is greatly appreciated.
 
-One Android app, two tabs:
+## What is Attendo?
 
-- **Attendance** — mark, in one tap a day, whether you were in the classes your timetable says you had. Attendance is counted in **one-hour units**, so a 2-hour class you left halfway through is 50% of that session, not a coin flip between present and absent.
-- **Rooms** — what's free right now, and when any given room is free across the week.
+Attendo is a free Android app that does two things a FoT student does every week:
 
-Attendance data can be backed up from Settings → Data & backup to a single JSON file and
-restored on another phone. See
-[Backup, restore, and moving to a new phone](#backup-restore-and-moving-to-a-new-phone).
+- **Keeps your attendance** — for every class your timetable says you had, you record
+  whether you were there. Attendance is counted in **hours**, so leaving a
+  two-hour lab halfway through counts as exactly half of it, not as a coin-flip between
+  present and absent. Each course gets its own percentage and a target, and the app tells
+  you how many classes you can still afford to miss — or how many you must attend to get
+  back to your target.
+- **Finds rooms** — which rooms are free right now, and what any room's whole week looks
+  like. The faculty's printed timetable ships inside the app.
 
-## Requirements
+Attendo uses anonymous, aggregate usage analytics to help understand whether and how
+widely the app is used. Everything you record stays on your phone until you export it
+yourself.
+
+## What can it do?
+
+- **A normal day in one tap.** Open the app, tap *Mark all present*, done.
+- **Missed the whole day?** One action marks every class that day as missed — and it
+  counts honestly, on both sides of the fraction.
+- **Everything else about a class**: it was cancelled (and why), it ran short, it moved to
+  another hour or another day, it was an extra class nobody timetabled, a note on anything
+  unusual.
+- **A backlog that tells the truth.** Classes from earlier dates that haven't been
+  reviewed yet are shown clearly — you can review them day by day, mark the whole lot as
+  missed, or cancel the whole lot. There is deliberately no way to just *ignore* them:
+  unmarked hours are not a rounding problem.
+- **A colour-coded calendar** of your semester, per course and overall.
+- **Semester management**: semester dates, holidays, working Saturdays, a personal joining
+  date if you arrived mid-semester.
+- **Backup and restore** to a single file you control — see below.
+- **A semester record PDF** and a **CSV spreadsheet** of your whole history, for showing
+  anyone who asks.
+- **Light or dark, or however the phone is set** — with Android 12's wallpaper colours
+  when the device supports them.
+
+## Installation
+
+Attendo is not on any app store. Install the APK from
+[GitHub Releases](https://github.com/divsysx/Attendo/releases):
+
+1. Download the `.apk` file on your phone.
+2. Open it. Android will ask for permission to install from that source (your browser or
+   file manager) — allow it once.
+3. Open Attendo. Android 8 (Oreo) or newer is required.
+
+Updates arrive the same way. Attendo checks quietly in the background — at most once a
+day — and when a newer release is published the update card appears on the app's main
+screen. Settings → Updates can check sooner; a release you dismiss with *Not now* is not
+offered again until a genuinely new one is published.
+
+## Getting started
+
+1. **Seed your courses.** On first open, tap *Seed from timetable*, pick your section and
+   your lab batch, and tick the subjects you actually take. Attendo proposes courses from
+   the faculty timetable, one course per subject — labs and tutorials are separate
+   courses, because they are taught, examined and attended separately. Anything it cannot
+   make sense of (two subjects at the same hour, a lab split across batches) is flagged
+   for you rather than guessed at. You can also add courses by hand.
+2. **Set your targets.** In Settings, pick an overall target and a target for new courses.
+   75% is the usual university requirement.
+3. **Mark today.** That's the whole daily routine. Open the app, and if you went to
+   everything, tap *Mark all present*.
+
+## Attendance
+
+**Attendance is counted by the hour.** A two-hour class is worth two hours; attending one
+of them is 50% of that class. A course's percentage is `hours attended ÷ hours held`, never
+an
+average of class percentages — so a two-hour lab weighs twice what a one-hour lecture
+does. Your overall figure works the same way across all courses.
+
+- **A class you marked** counts on both sides: attended hours on top, held hours below.
+- **A cancelled class** counts on neither side. A class that never happened must not count
+  against you.
+- **An unmarked class** counts on neither side *yet*. It stays in your backlog until you
+  deal with it.
+
+The day screen shows each class as a strip of one-hour chips — tap the hours you attended
+and confirm. Anything unusual about a class (cancelled, shortened, moved, extra) lives
+behind the ⋮ menu on that class.
+
+The dashboard warns you when past days still have unmarked classes: *"You have classes
+from earlier dates that haven't been reviewed yet."* Review them one day at a time, or use
+*I missed all of them* / the cancel action to deal with the whole backlog at once. These
+actions only ever touch classes that are still unmarked — anything you already recorded
+is left alone.
+
+If you joined mid-semester, Settings → *Attendance counted from* lets you count from your
+joining date instead of the semester start. Nothing is deleted either way; the earlier
+classes stay in your history and this only decides which of them count towards your
+percentage.
+
+## Finding a room
+
+The **Rooms** tab shows which rooms are free right now and which are in use, with what.
+Search by room number, or tap a room to see its whole week — the timetable covers
+9 AM to 6 PM, Monday to Saturday. Anything outside those hours is unbooked, which is not
+the same as being open.
+
+The timetable ships inside the app as a CSV, transcribed from the faculty's printed grid.
+When the faculty prints a new one, the repository updates it and a new release carries it
+in.
+
+## Backup and restore
+
+Your attendance records are the one thing that cannot be reconstructed — not from the
+timetable, and not from memory. So there is an explicit export, and it is not the same
+thing as Android's automatic backup (which Attendo ships switched off, and which you can
+turn on if you want it — see *Moving to a new phone* below).
+
+Everything here lives under **Settings → Data & backup**.
+
+### Export a backup
+
+1. Tap **Export backup**.
+2. Android's file picker opens with a name filled in — `attendo-backup-2026-08-19.json`.
+   Put it wherever you like: Drive, Downloads, a folder that syncs.
+3. Move it off the phone. A backup that only exists on the phone you lose is not a backup.
+
+The file holds everything the app knows: every course, every timetable slot (including
+retired ones), every class with *which hours* you attended, every cancellation and its
+reason, both halves of every moved class, semester dates, holidays, targets, your section
+and your name.
+
+### Import a backup
+
+1. Tap **Import backup** and pick the file.
+2. The whole file is checked before anything changes — JSON, format version, SHA-256
+   checksum, every value and reference.
+3. A preview shows what is in the file next to what is on the phone now.
+4. **Replace** deletes the current data and writes the backup's. A copy of what was
+   replaced is saved first, so **Restore previous data** can undo the import once.
+
+An import either happens completely or not at all. A malformed, truncated, failed-checksum
+or internally inconsistent file is refused and nothing is touched. Older format versions
+are upgraded on the way in.
+
+### Moving to a new phone
+
+1. Old phone: **Export backup**, and save the file somewhere the new phone can reach.
+2. Install Attendo on the new phone and open it once.
+3. New phone: **Import backup**, check the preview, then **Replace**.
+4. Compare the overall percentage on both phones before you wipe the old one.
+
+Attendo can also take part in Android's own automatic backup, through the **Automatic
+backup** switch on the same screen. It is off by default: while it is off, uninstalling
+Attendo really removes the data, and reinstalling starts fresh. Turned on, Android *may*
+copy your data to your Google account and put it back when you reinstall Attendo or set
+up a new phone — whether it ever does is up to Android and the phone's backup settings
+(it runs about once a day, while the phone is idle, charging and on Wi-Fi), and there is
+no way to check from inside Attendo that a copy exists. Turning the switch off again
+stops new copies, but cannot delete one Android has already stored. Treat it as luck
+rather than a plan — the export is the copy you control.
+
+### Starting fresh
+
+**Settings → Data & backup → Clear all Attendo data** removes everything Attendo keeps
+on this phone — your attendance records, your courses, your settings — and restarts the
+app as a fresh install. It does not delete any backup Android or Google may already be
+holding (nothing inside the app can), and it deliberately leaves two settings alone: the
+Automatic backup switch and Appearance, which say how this phone behaves rather than
+anything you recorded.
+
+### The spreadsheet and the PDF
+
+The same screen writes **Export attendance CSV** — one row per class, for Excel or for
+anyone who wants to check the record. It cannot be imported back; flattening a semester
+into rows loses information a restore would have to guess at.
+
+At the end of a semester, Attendo offers to export a **semester record PDF** — per-course
+figures and the full class history, the same numbers the app has been showing all
+semester.
+
+## Feedback
+
+Found a bug, or have an idea? **Settings → Feedback → Report a bug or suggest an
+improvement** opens your email app with the message started for you. Nothing is sent from
+inside Attendo — there is no account and no server. You can also
+[open an issue on GitHub](https://github.com/divsysx/Attendo/issues).
+
+## Screenshots
+
+![Screenshot 01](screenshots/01.jpg)
+![Screenshot 02](screenshots/02.jpg)
+![Screenshot 03](screenshots/03.jpg)
+![Screenshot 04](screenshots/04.jpg)
+![Screenshot 05](screenshots/05.jpg)
+![Screenshot 06](screenshots/06.jpg)
+![Screenshot 07](screenshots/07.jpg)
+![Screenshot 08](screenshots/08.jpg)
+
+## Contributors
+
+- **Divyansh Sharma** — Project maintainer · [GitHub](https://github.com/divsysx)
+- **Shubham Prasad** — Ideas, codebase improvements, suggestions, and testing · [GitHub](https://github.com/Shu6hamPrasad)
+- **Adrija Roy** — Ideas, extensive testing, and suggestions · [GitHub](https://github.com/anshuroy11012007-hash)
+
+---
+
+## For developers
+
+The sections above are for Attendo's users. The rest of this file is for anyone building
+it or reading its code.
+
+### Requirements
 
 | | |
 |---|---|
@@ -22,7 +221,7 @@ restored on another phone. See
 | Gradle | 8.11.1 — supplied by the wrapper, don't install it |
 | Kotlin | 2.1.0 |
 
-## Build and run
+### Build and run
 
 ```bash
 # Debug APK
@@ -49,7 +248,7 @@ JAVA_HOME=$(/usr/libexec/java_home -v 17) ./gradlew :core:test
 
 The debug APK lands in `app/build/outputs/apk/debug/`.
 
-## Release build
+### Release build
 
 Release builds are signed with a keystore that is **not** in this repository. The
 credentials come from `keystore.properties` at the repo root, which is untracked — as is
@@ -81,7 +280,50 @@ keep using AGP's own generated debug keystore, so a fresh checkout with no
 On CI, write `keystore.properties` and the keystore file from your secret store before
 invoking Gradle, and keep both out of the checkout and out of the build log.
 
-## Modules
+### Publishing a release
+
+The in-app updater reads GitHub Releases through the official API — nothing is scraped,
+and there is no backend of our own. A release that the app can update from needs three
+things, all of them parts of a normal GitHub Release:
+
+1. **The version code in the release title.** Title the release `Attendo 1.2 (3)` — the
+   parenthesised number is the Android `versionCode`, which is the only thing the updater
+   compares ("1.10" versus "1.9" is not decidable from version names). A release whose
+   title has no parenthesised number is skipped: there is no honest way to call it newer
+   or older.
+2. **The APK as a release asset**, any `.apk` name.
+3. **A checksum asset next to it**, named exactly the APK's name plus `.sha256` — for
+   `attendo-1.2.apk`, the asset `attendo-1.2.apk.sha256`:
+
+   ```bash
+   shasum -a 256 attendo-1.2.apk > attendo-1.2.apk.sha256
+   ```
+
+   One line, the `shasum` format; the app reads the first 64 hex digits. GitHub's release
+   metadata cannot carry a checksum, which is why the checksum ships as an asset. A
+   release without one still updates — the installer then relies on the package identity
+   and signing-certificate checks alone — but every release should publish one.
+
+Tag the release `v1.2` (the tag is where the version name comes from). Leave
+**"Set as a pre-release"** unticked for stable releases: the updater asks the API for
+`releases/latest`, which never returns drafts or pre-releases. That flag is also the
+seam a future Beta/Early-Access channel would hang off — a pre-release is a beta by
+another name, and a future beta provider would read the `releases` list and filter by it.
+
+Before installing anything, the app checks that the downloaded file is newer than what is
+installed, is actually Attendo (`com.attendo`), is signed by the release certificate, and
+matches the published checksum. The certificate check compares against the public digest
+in `ApkGate.RELEASE_SIGNER_SHA256` — the same fingerprint `apksigner verify --print-certs`
+prints — never against anything private.
+
+Checking is automatic and quiet. On every open the app raises the card for an update a
+previous check found (a student offline since a release came out still hears about it),
+and it asks GitHub at most once a day. A release dismissed with "Not now" is not offered
+again until a genuinely different release is published, and the manual "Check" in Settings
+is never throttled. A check that finds nothing, or cannot complete, says nothing — the
+card appears on the app's main screen only when there is an update to act on.
+
+### Modules
 
 ```
 attendo/
@@ -100,7 +342,7 @@ is actually present (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `sdk.dir` in
 SDK, which would take `:core:test` down with it. This way you can check out the repo on
 any machine with a JDK and run `./gradlew engineCheck`.
 
-## How attendance is counted
+### How attendance is counted
 
 Everything follows from one decision: **the unit is one hour**.
 
@@ -147,6 +389,11 @@ Editing a pattern mid-semester works the same way: the old pattern is *retired*
 already recorded keep pointing at the pattern that actually produced them. History stays
 truthful.
 
+The bulk actions work on the same primitives: "miss the whole day" and "I missed all of
+them" are `markAbsent` applied to every still-pending row (HELD with an empty mask — the
+hours count as held, so the denominator stays honest), and the bulk cancel is `cancel`
+applied the same way. Rows already dealt with are never touched.
+
 ### Status, and what counts
 
 | Status | In the denominator? |
@@ -155,7 +402,7 @@ truthful.
 | `HELD` | Yes. |
 | `CANCELLED` | No, on either side. |
 
-## Updating the timetable each semester
+### Updating the timetable each semester
 
 The room timetable ships as a CSV in `app/src/main/assets/`, transcribed from the
 faculty's printed grid.
@@ -195,7 +442,7 @@ That parses the file you just wrote and fails with the offending line number on 
 off the hour grid, any bad `kind` code, any truncated row — and, more usefully, on any
 subject or faculty acronym you used but didn't add to the key.
 
-### Two things about the source data
+#### Two things about the source data
 
 **A class attended by several cohorts is printed on each cohort's page**, so it arrives as
 several identical rows differing only by `section`. That's not a double-booking. Rows are
@@ -213,7 +460,7 @@ bookings, so they never appear in the Rooms tab, and they cannot clash with anyt
 Leave the column empty rather than inventing a room or dropping the row: inventing one puts
 a phantom booking on a real hall, and dropping it loses a course the student actually takes.
 
-## Setting up your own courses
+### Setting up your own courses
 
 Either type them in by hand, or seed them from the timetable: pick your section, pick your
 lab batch, and `SectionSeeder` proposes the courses that section is timetabled for, each
@@ -226,8 +473,9 @@ wrong:
 
 **A subject's practicals and tutorials each become their own course.** `ECA`, `ECA Lab`
 and `ECA Tutorial` are separate rows, with separate targets and separate percentages,
-because they're taught, examined and attended separately — a term of missed labs shouldn't
-disappear into a healthy lecture figure. A row is a lab when its `kind` is `P`, and a
+because they're taught, examined and attended separately — a semester of missed labs
+shouldn't disappear into a healthy lecture figure. A row is a lab when its `kind` is `P`,
+and a
 tutorial when its `kind` is `T` or its subject is tagged `-T`.
 
 **A trailing `-A`/`-B` on a subject is dropped, and so is `-T`.** `-A`/`-B` names the
@@ -245,7 +493,7 @@ that lab the moment `A1` was picked. So a subject batched outside the offered sc
 kept whichever batch you choose, and one still split two ways after your answer is flagged
 `needsBatchCheck` for you to look at rather than guessed at.
 
-## Your name
+### Your name
 
 **Settings → You → Your name** is one text field, and everything it changes is cosmetic: the
 Attendance tab greets you with your chosen name rather than a generic greeting, and a backup
@@ -258,106 +506,7 @@ targets and the term dates. It travels inside a backup for one reason: so that r
 new phone greets the same person, and so the import preview can say whose file you are looking
 at.
 
-## Backup, restore, and moving to a new phone
-
-Marks are the one thing here that cannot be reconstructed. The timetable ships inside the APK
-and the courses can be seeded again in a minute; whether you sat through the second hour of
-last Thursday's lab exists only on your phone. So there is an explicit export, and it is not
-the same thing as Android's automatic backup — see below.
-
-Everything in this section lives under **Settings → Data & backup**.
-
-### Export a backup
-
-1. Tap **Export backup**.
-2. Android's own file picker opens with a name filled in — `attendo-backup-2026-08-19.json`.
-   Put it wherever you like: Drive, Downloads, a folder that syncs.
-3. Move it off the phone. A backup that only exists on the phone you lose is not a backup.
-
-The file holds everything the app knows, not what today's screen shows: every course
-(archived ones included) with its target and colour; every timetable slot **including the ones
-you have retired**, with their effective dates; every class with *which hours* of it you
-attended; every cancellation and its reason; both halves of every reschedule and the link
-between them; ad-hoc and shortened classes; term dates, holidays and working Saturdays; your
-section, batch and targets; and your display name, so the phone that reads the file greets you
-the same way and the preview can say whose file it is.
-
-### Import a backup
-
-1. Tap **Import backup**, and pick the file. The picker is filtered to JSON and the types
-   file managers commonly report a `.json` file as; the extension is never trusted on its own.
-2. The whole file is read and checked before anything on the phone changes: is it JSON, is the
-   format version one this build understands, does the SHA-256 checksum match, then every
-   value and every reference.
-3. A preview shows what is in the file — courses, classes, attendance, the dates it covers,
-   when it was written and by whom — next to what is on the phone now. **Written by** is the
-   display name of whoever exported it, or `Attendo` for a file exported without one.
-4. **Replace** deletes the current data and writes the backup's. Before it does, it saves a
-   copy of what is being replaced, so **Restore previous data** appears on the same screen
-   afterwards and undoes the import once.
-
-An import either happens completely or not at all. It runs in one database transaction, the
-written rows are read back and compared against the file's contents, and a mismatch rolls the
-whole thing back. A file that is malformed, truncated, fails its checksum, is internally
-inconsistent (a class pointing at a course that isn't in the file), or was written by a
-*newer* format version is refused, and nothing is touched. Older format versions are migrated
-forward on the way in.
-
-Every one of those refusals reads the same on screen — *"That file isn't a valid Attendo
-backup. Choose an Attendo backup (.json) file and try again."* — because they all have the same
-remedy, and because a parser offset is not something anyone can act on. The specific reason is
-not lost: it goes to logcat under the tag `AttendoBackup`, which is where to look when a file
-that should be valid is not (`adb logcat -s AttendoBackup`). See `BackupMessages`.
-
-Replace is the only import mode. A merge would have to decide what to do when both sides have
-a different answer for the same Thursday, and there is no answer to that which is better than
-asking.
-
-### Moving to a new phone
-
-1. Old phone: **Export backup**, and save the file somewhere the new phone can reach.
-2. Install Attendo on the new phone and open it once.
-3. New phone: **Import backup**, check the preview against the old phone, then **Replace**.
-4. Compare the overall percentage on both phones before you wipe the old one.
-
-Nothing needs the old phone after step 1. The file is self-contained — which is why the format
-points between records with its own refs rather than with database ids.
-
-### What Android's own backup does and does not guarantee
-
-`android:allowBackup` is left on, and `backup_rules.xml` / `data_extraction_rules.xml` include
-the database and the preferences, so Android *may* carry your data across when you set up a
-new phone. `AppContainer.checkpoint()` folds the write-ahead log back into `attendo.db` every
-time the app leaves the foreground, so whatever gets uploaded is a complete database rather
-than a stale file plus an unflushed log — without that, a WAL-mode database can be backed up
-as an install that has forgotten the last few weeks.
-
-Treat it as luck rather than a plan:
-
-- it runs roughly once a day, and only while the phone is idle, charging and on unmetered Wi-Fi;
-- it keeps one copy;
-- it is discarded when you uninstall the app, and after a couple of months of the phone going unused;
-- it does nothing for a phone signed in to a different Google account;
-- there is no way to ask for one, and no way to check that it worked.
-
-The export is the copy you control. Auto Backup is a bonus on top of it, not a substitute
-for it.
-
-### Export attendance CSV
-
-The same screen writes `attendo-attendance-2026-08-19.csv` — one row per class:
-
-```
-date,day,course_code,course_name,kind,start_hour,slot,units_planned,units_attended,percent,status,cancellation_reason,origin,room,note
-```
-
-That's for a spreadsheet, or for anyone who wants to check the record: a cancelled class is a
-row with an empty percentage rather than an absent row, because "that class didn't happen" is
-the thing most often worth being able to prove. **It cannot be imported back.** Flattening a
-term into rows loses which slot generated a class and which cancellation a makeup replaced,
-and a restore that guesses at those is worse than no restore.
-
-### The file format
+### The backup file format
 
 Written by hand in `core/backup/BackupWire.kt`, versioned, and deliberately independent of
 both Room's schema and the domain classes — so a Room migration or a new field on
@@ -366,7 +515,7 @@ both Room's schema and the domain classes — so a Room migration or a new field
 ```json
 {
   "formatVersion": 1,
-  "app":        { "name": "Attendo", "versionName": "1.0", "versionCode": 1 },
+  "app":        { "name": "Attendo", "versionName": "1.1", "versionCode": 2 },
   "exportedAt": "2026-08-19T09:30:00Z",
   "checksum":   { "algorithm": "SHA-256", "value": "<64 hex chars>" },
   "payload":    { "preferences": {}, "calendar": {}, "courses": [], "patterns": [], "sessions": [] }
@@ -393,7 +542,13 @@ because origin is derived from whether a pattern id is present, and an empty `(p
 slot is one the generator will fill in again. The importer gives such a reference an id of its
 own. Every other reference must resolve.
 
-## Layout
+Every way a backup can be refused reads the same on screen — *"That file isn't a valid Attendo
+backup. Choose an Attendo backup (.json) file and try again."* — because they all have the same
+remedy, and because a parser offset is not something anyone can act on. The specific reason is
+not lost: it goes to logcat under the tag `AttendoBackup` (`adb logcat -s AttendoBackup`). See
+`BackupMessages`.
+
+### Layout
 
 ```
 core/src/main/kotlin/com/attendo/core/
@@ -409,10 +564,12 @@ core/src/main/kotlin/com/attendo/core/
 ├── engine/
 │   ├── AttendanceEngine.kt per-session, per-course and overall percentages; target advice
 │   ├── SessionGenerator.kt patterns + dates -> sessions; the daily review's DayPlan
-│   ├── SessionOps.kt       mark, approve, cancel, resize, reschedule, ad-hoc
+│   ├── SessionOps.kt       mark, approve, cancel, resize, reschedule, ad-hoc, bulk
 │   ├── CourseHistory.kt    one course's sessions, newest first, grouped by month
 │   ├── CalendarBuilder.kt  the colour-coded month grid
 │   └── RoomAvailability.kt free rooms now, a room's week, the day+time grid
+├── rollover/
+│   └── SemesterRecordRenderer.kt  the semester record PDF's contents, as pure data
 ├── backup/
 │   ├── BackupSnapshot.kt   the whole logical state, as one value; normalised(), summarise()
 │   ├── BackupWire.kt       the on-disk JSON schema, written by hand and versioned
@@ -437,6 +594,7 @@ app/src/main/kotlin/com/attendo/
 │   ├── AttendanceRepository.kt   the only place attendance is read or written
 │   ├── BackupRepository.kt       snapshot out, verified transactional restore in
 │   ├── SafetySnapshotStore.kt    the copy taken before a restore, for the one undo
+│   ├── SemesterRecordPdf.kt      paints the renderer's document onto a real PDF
 │   ├── DocumentStore.kt          reading and writing the picker's URIs
 │   ├── TimetableRepository.kt    parses the bundled CSVs once per process
 │   └── SettingsStore.kt          targets, term dates, holidays, your name (SharedPreferences)
@@ -444,10 +602,12 @@ app/src/main/kotlin/com/attendo/
     ├── AttendoApp.kt            the two tabs and the whole navigation graph
     ├── Routes.kt                every destination and its arguments
     ├── Format.kt                date, instant and count labels, in one place
+    ├── SessionLabels.kt         status labels, in one place
     ├── components/              top bar, chips, date picker, bars, month calendar
     ├── attendance/              dashboard, day review, courses, editor, seeder
     ├── rooms/                   what's free now, and one room's week
-    ├── settings/                targets, term dates, holidays, and Data & backup
+    ├── rollover/                the new-semester gate: record, backup, switch
+    ├── settings/                targets, term dates, holidays, Data & backup, feedback
     └── theme/                   colours, the six attendance bands, type
 ```
 
@@ -457,7 +617,7 @@ only decides when rows are written. ViewModels take plain constructor parameters
 built by `viewModelFactory` initializers reading the `AppContainer` out of
 `CreationExtras` — that is the whole of the dependency injection.
 
-## Tests
+### Tests
 
 `:core` carries the tests, because `:core` carries the arithmetic. The ones worth knowing
 about:
@@ -466,10 +626,12 @@ about:
 - `UnitMaskTest` — the clamping that prevents >100% sessions
 - `AttendanceEngineTest` — unit-weighted aggregation, and "how many can I still miss"
 - `SessionGeneratorTest` — idempotent generation, holidays, retired patterns
-- `SessionOpsTest` — cancel, resize, reschedule-as-two-rows
+- `SessionOpsTest` — cancel, resize, reschedule-as-two-rows, and the bulk actions
+- `SemesterRecordRendererTest` — the record's figures and labels, including "Missed"
 - `BundledTimetableTest` — the shipped CSV itself, not a fixture
-- `BackupRoundTripTest` — export → import gives back *logically the same term*, not merely the
-  same percentage: fractional attendance, shortened, cancelled, rescheduled and ad-hoc
+- `BackupRoundTripTest` — export → import gives back *logically the same semester*, not
+  merely the same percentage: fractional attendance, shortened, cancelled, rescheduled
+  and ad-hoc
   classes, retired patterns, unmarked classes, the calendar and the settings
 - `BackupRejectionTest` — corrupt JSON, a truncated file, a missing field, a bad checksum, an
   unsupported future version, a reference that resolves to nothing
@@ -496,20 +658,3 @@ and they still run on the JVM — no device, no emulator:
 ./gradlew :app:testDebugUnitTest
 open app/build/reports/tests/testDebugUnitTest/index.html
 ```
-
-## Screenshots
-
-![Screenshot 01](screenshots/01.jpg)
-![Screenshot 02](screenshots/02.jpg)
-![Screenshot 03](screenshots/03.jpg)
-![Screenshot 04](screenshots/04.jpg)
-![Screenshot 05](screenshots/05.jpg)
-![Screenshot 06](screenshots/06.jpg)
-![Screenshot 07](screenshots/07.jpg)
-![Screenshot 08](screenshots/08.jpg)
-
-### Contributors
-
-- **Divyansh Sharma** — Project maintainer · [GitHub](https://github.com/divsysx)
-- **Shubham Prasad** — Ideas, codebase improvements, suggestions, and testing · [GitHub](https://github.com/Shu6hamPrasad)
-- **Adrija Roy** — Ideas, extensive testing, and suggestions · [GitHub](https://github.com/anshuroy11012007-hash)

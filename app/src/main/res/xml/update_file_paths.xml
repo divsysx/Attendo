@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The one directory the update FileProvider exposes: private downloaded updates. -->
+<paths>
+    <files-path
+        name="updates"
+        path="updates/" />
+</paths>

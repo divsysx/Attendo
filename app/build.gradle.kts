@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    // Processes app/google-services.json — the Firebase config downloaded from the console —
+    // into build resources. Without it the Firebase SDK initialises with no project and
+    // analytics quietly goes nowhere.
+    alias(libs.plugins.google.services)
 }
 
 // Release signing credentials. They live in `keystore.properties` at the repo root, which is
@@ -36,8 +40,8 @@ android {
         // machinery to support phones this app is unlikely to run on.
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     signingConfigs {
@@ -50,6 +54,13 @@ android {
                 storePassword = releaseSigningProperty("storePassword")
                 keyAlias = releaseSigningProperty("keyAlias")
                 keyPassword = releaseSigningProperty("keyPassword")
+                // v1 (JAR) signing alongside v2: the in-app updater reads the signer out of a
+                // *downloaded* APK before installing it, and on Android 8/8.1 the platform's
+                // archive parser only understands JAR signatures — a v2-only APK would come
+                // back "unsigned" and be refused. Both schemes sign with the same key, so
+                // this changes nothing about the app's identity.
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }
@@ -132,6 +143,16 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Firebase Analytics, versioned by the BoM. Aggregate, anonymous usage information
+    // only — see com.attendo.data.analytics.UsageAnalytics for the whole vocabulary of
+    // events, and the README for what is deliberately never collected.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+
+    // The update system caches the last successful check's manifest to SharedPreferences as
+    // JSON; the codec is the same one :core's backup format uses.
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
 }

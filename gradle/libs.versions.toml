@@ -9,6 +9,8 @@ activityCompose = "1.9.3"
 lifecycle = "2.8.7"
 navigationCompose = "2.8.5"
 serialization = "1.7.3"
+googleServices = "4.5.0"
+firebaseBom = "34.18.0"
 junit = "4.13.2"
 
 [libraries]
@@ -31,6 +33,10 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
+# The BoM carries the versions so the app module never states one, per Firebase's setup.
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 
@@ -41,3 +47,5 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+# Reads app/google-services.json and wires the Firebase project id/app id into the build.
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

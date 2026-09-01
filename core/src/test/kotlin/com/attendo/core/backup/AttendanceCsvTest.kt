@@ -36,7 +36,7 @@ class AttendanceCsvTest {
     fun `the header names every column a reader needs`() {
         assertEquals(
             "date,day,course_code,course_name,kind,start_hour,slot," +
-                "units_planned,units_attended,percent,status,cancellation_reason,origin,room,note",
+                "hours_planned,hours_attended,percent,status,cancellation_reason,origin,room,note",
             AttendanceCsv.HEADER,
         )
         assertEquals(AttendanceCsv.HEADER, csv.trimEnd('\n').lines().first())
@@ -82,8 +82,8 @@ class AttendanceCsvTest {
     fun `an hour of a two-hour class reads as fifty percent, not as present or absent`() {
         val row = rowFor(BackupFixtures.halfAttended)
 
-        assertEquals("2", row.field("units_planned"))
-        assertEquals("1", row.field("units_attended"))
+        assertEquals("2", row.field("hours_planned"))
+        assertEquals("1", row.field("hours_attended"))
         assertEquals("50", row.field("percent"))
         assertEquals("held", row.field("status"))
     }
@@ -93,8 +93,8 @@ class AttendanceCsvTest {
         val row = rowFor(BackupFixtures.fullyMissed)
 
         assertEquals("held", row.field("status"))
-        assertEquals("2", row.field("units_planned"))
-        assertEquals("0", row.field("units_attended"))
+        assertEquals("2", row.field("hours_planned"))
+        assertEquals("0", row.field("hours_attended"))
         assertEquals("0", row.field("percent"))
         assertEquals("", row.field("cancellation_reason"))
     }
@@ -105,8 +105,8 @@ class AttendanceCsvTest {
 
         // The slot label shrinks with it, so the row does not claim a 9–11 class ran.
         assertEquals("9–10 AM", row.field("slot"))
-        assertEquals("1", row.field("units_planned"))
-        assertEquals("1", row.field("units_attended"))
+        assertEquals("1", row.field("hours_planned"))
+        assertEquals("1", row.field("hours_attended"))
         assertEquals("100", row.field("percent"))
     }
 
@@ -116,10 +116,10 @@ class AttendanceCsvTest {
 
         assertEquals("cancelled", row.field("status"))
         assertEquals("faculty_cancelled", row.field("cancellation_reason"))
-        assertEquals("2", row.field("units_planned"))
+        assertEquals("2", row.field("hours_planned"))
         // Blank rather than 0: nobody missed anything, and a 0 in this column would read as an
         // absence in any spreadsheet that sums it.
-        assertEquals("", row.field("units_attended"))
+        assertEquals("", row.field("hours_attended"))
         assertEquals("", row.field("percent"))
     }
 
@@ -138,10 +138,10 @@ class AttendanceCsvTest {
         val row = rowFor(BackupFixtures.awaitingReview)
 
         assertEquals("scheduled", row.field("status"))
-        assertEquals("2", row.field("units_planned"))
+        assertEquals("2", row.field("hours_planned"))
         // The app pre-fills these hours as present, but that is a suggestion on a screen, not a
         // record. Exporting it would print a guess as evidence.
-        assertEquals("", row.field("units_attended"))
+        assertEquals("", row.field("hours_attended"))
         assertEquals("", row.field("percent"))
     }
 
@@ -152,11 +152,11 @@ class AttendanceCsvTest {
 
         assertEquals("cancelled", original.field("status"))
         assertEquals("rescheduled", original.field("cancellation_reason"))
-        assertEquals("", original.field("units_attended"))
+        assertEquals("", original.field("hours_attended"))
 
         assertEquals("held", replacement.field("status"))
         assertEquals("adhoc", replacement.field("origin"))
-        assertEquals("2", replacement.field("units_attended"))
+        assertEquals("2", replacement.field("hours_attended"))
         assertEquals("4–6 PM", replacement.field("slot"))
         // Different dates, which is the whole point of the two rows.
         assertEquals("2026-08-31", original.field("date"))
@@ -299,8 +299,8 @@ class AttendanceCsvTest {
         // spreadsheet gave a different answer from the dashboard, the file would be worse than
         // none at all.
         val held = rows.filter { it.field("status") == "held" }
-        val planned = held.sumOf { it.field("units_planned").toInt() }
-        val attended = held.sumOf { it.field("units_attended").toInt() }
+        val planned = held.sumOf { it.field("hours_planned").toInt() }
+        val attended = held.sumOf { it.field("hours_attended").toInt() }
         val onThePhone = AttendanceEngine.tallyOf(fixture.sessions)
 
         assertEquals(onThePhone.unitsHeld, planned)
@@ -312,8 +312,8 @@ class AttendanceCsvTest {
     fun `each row's own percentage is the hours it reports`() {
         rows.filter { it.field("status") == "held" }.forEach { row ->
             val expected = Percent.ofRatio(
-                row.field("units_attended").toInt(),
-                row.field("units_planned").toInt(),
+                row.field("hours_attended").toInt(),
+                row.field("hours_planned").toInt(),
             )
             assertEquals(row.toString(), expected?.format(), row.field("percent"))
         }
@@ -352,7 +352,7 @@ class AttendanceCsvTest {
 
         assertEquals("", row.field("course_code"))
         assertEquals("", row.field("course_name"))
-        assertEquals("2", row.field("units_attended"))
+        assertEquals("2", row.field("hours_attended"))
     }
 
     // ---- the file itself ----------------------------------------------------

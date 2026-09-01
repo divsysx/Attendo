@@ -119,16 +119,16 @@ class FutureReviewTest {
     }
 
     @Test
-    fun `the backlog of missed days excludes today and every future date`() {
+    fun `the backlog of missed days leaves an in-progress today out`() {
         val sessions = listOf(
             session(lastWeek),
-            session(today),
+            session(today), // 9–11, running right now
             session(thursday),
         )
 
-        // Today is reviewable but is not *backlog*: the day has its own card and its own
-        // one-tap approve on the screen this list appears under.
-        assertEquals(listOf(lastWeek), AttendanceEngine.daysAwaitingReview(sessions, today))
+        // Half past ten: today's class is mid-slot, so it is not backlog yet — see
+        // BacklogTodayTest for the whole matrix of today's cases.
+        assertEquals(listOf(lastWeek), AttendanceEngine.daysAwaitingReview(sessions, today.atTime(10, 30)))
     }
 
     @Test
@@ -184,7 +184,7 @@ class FutureReviewTest {
             emptyList<ClassSession>(),
             AttendanceEngine.sessionsAwaitingReview(listOf(future), today),
         )
-        assertEquals(emptyList<LocalDate>(), AttendanceEngine.daysAwaitingReview(listOf(future), today))
+        assertEquals(emptyList<LocalDate>(), AttendanceEngine.daysAwaitingReview(listOf(future), today.atTime(15, 0)))
     }
 
     @Test
@@ -222,7 +222,7 @@ class FutureReviewTest {
             emptyList<ClassSession>(),
             AttendanceEngine.sessionsAwaitingReview(listOf(unmarked), today),
         )
-        assertEquals(emptyList<LocalDate>(), AttendanceEngine.daysAwaitingReview(listOf(unmarked), today))
+        assertEquals(emptyList<LocalDate>(), AttendanceEngine.daysAwaitingReview(listOf(unmarked), today.atTime(15, 0)))
         assertEquals(
             0,
             AttendanceEngine.courseStats(course, listOf(unmarked), today = today).sessionsAwaitingReview,
@@ -238,7 +238,7 @@ class FutureReviewTest {
         val unmarked = SessionOps.reopen(marked, stamp)
 
         assertTrue(unmarked.isReviewableOn(today))
-        assertEquals(listOf(lastWeek), AttendanceEngine.daysAwaitingReview(listOf(unmarked), today))
+        assertEquals(listOf(lastWeek), AttendanceEngine.daysAwaitingReview(listOf(unmarked), today.atTime(9, 0)))
         assertEquals(
             1,
             AttendanceEngine.courseStats(course, listOf(unmarked), today = today).sessionsAwaitingReview,

@@ -50,6 +50,7 @@ import com.attendo.ui.components.MonthCalendar
 import com.attendo.ui.components.PercentHeadline
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.components.TargetAdviceLine
+import com.attendo.ui.classes
 import com.attendo.ui.dayMonth
 import com.attendo.ui.display
 import com.attendo.ui.hours
@@ -164,8 +165,8 @@ private fun CourseDetailContent(
                     if (stats.sessionsAwaitingReview > 0) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "${stats.sessionsAwaitingReview} unmarked — they count for " +
-                                "nothing until reviewed.",
+                            text = "${classes(stats.sessionsAwaitingReview)} still to mark — " +
+                                "they count for nothing until you do.",
                             style = MaterialTheme.typography.bodySmall,
                             color = bands.onPending,
                         )
@@ -264,7 +265,7 @@ private fun ProjectionCard(state: CourseDetailUiState) {
     Card {
         Column(Modifier.padding(16.dp)) {
             Text(
-                text = "${hours(state.remainingUnits)} left this term",
+                text = "${hours(state.remainingUnits)} left this semester",
                 style = MaterialTheme.typography.titleSmall,
             )
             Spacer(Modifier.height(8.dp))
