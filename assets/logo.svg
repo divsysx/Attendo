@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="540" viewBox="0 0 108 108">
+  <!--
+    Vector source of the Attendo logo, exported from the app's adaptive launcher icon:
+      app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+        background: app/src/main/res/values/ic_launcher_background.xml (#7A2E3B)
+        foreground:  app/src/main/res/drawable/ic_launcher_foreground.xml
+    Same 108x108 viewport as the drawable; width/height give a 5x (540px) raster size.
+  -->
+  <rect width="108" height="108" fill="#7A2E3B"/>
+
+  <!-- three ruled lines, white at 55% opacity -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-opacity="0.55" stroke-linecap="round">
+    <path d="M32,44 h20"/>
+    <path d="M32,56 h14"/>
+    <path d="M32,68 h10"/>
+  </g>
+
+  <!-- the tick -->
+  <path d="M46,62 l12,12 l22,-30" fill="none" stroke="#FFFFFF" stroke-width="9"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
