@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google-site-verification" content="cgYNLdu-K3cKW3RV45WZeE_QJj5j9f6eWh2tJt4BVTs" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Attendo — attendance tracking and room lookup for students of the Faculty of Technology, University of Delhi. Free, local-first Android app.">
+<title>Attendo</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #faf7f8; color: #2b2225;
+    padding: 0 20px;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #191214; color: #e9e2e4; }
+    a { color: #e8a9b4; }
+    .card { background: #211a1c; }
+  }
+  a { color: #8c3644; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 0 64px; }
+  .logo { width: 108px; height: 108px; border-radius: 22px; }
+  h1 { font-size: 2.4rem; margin: 18px 0 6px; letter-spacing: -0.02em; }
+  .tagline { font-size: 1.15rem; opacity: 0.8; margin: 0 0 32px; }
+  .card {
+    background: #fff; border-radius: 14px; padding: 22px 26px; margin: 18px 0;
+  }
+  .card h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  .card p, .card ul { margin: 8px 0; }
+  .card ul { padding-left: 20px; }
+  .btn {
+    display: inline-block; background: #7a2e3b; color: #fff; text-decoration: none;
+    padding: 11px 22px; border-radius: 10px; font-weight: 600; margin: 6px 12px 6px 0;
+  }
+  footer { margin-top: 36px; font-size: 0.9rem; opacity: 0.75; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <svg class="logo" viewBox="0 0 108 108" role="img" aria-label="Attendo logo">
+    <rect width="108" height="108" rx="24" fill="#7A2E3B"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-opacity="0.55" stroke-linecap="round">
+      <path d="M32,44 h20"/><path d="M32,56 h14"/><path d="M32,68 h10"/>
+    </g>
+    <path d="M46,62 l12,12 l22,-30" fill="none" stroke="#FFFFFF" stroke-width="9"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+
+  <h1>Attendo</h1>
+  <p class="tagline">Attendance tracking and room lookup for students of the
+  Faculty of Technology, University of Delhi.</p>
+
+  <div class="card">
+    <h2>Keep your attendance — honestly</h2>
+    <p>Attendo records whether you were in each class your timetable says you had,
+    counted in <strong>hours</strong> — so leaving a two-hour lab halfway through counts
+    as exactly half, not a coin flip. Every course gets its own percentage and target,
+    and the app tells you how many classes you can still afford to miss, or how many you
+    must attend to get back on track.</p>
+    <ul>
+      <li>A normal day in one tap; a missed day in one action</li>
+      <li>Cancelled, shortened, moved, and extra classes — with notes</li>
+      <li>A colour-coded semester calendar, per course and overall</li>
+      <li>Semester dates, holidays, working Saturdays, mid-semester joins</li>
+      <li>Backup and restore to a single file you control, and attendance export as CSV at any time</li>
+      <li>A PDF semester record when a new semester begins</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Find rooms</h2>
+    <p>Which rooms are free right now, and what any room's whole week looks like.
+    The faculty's printed timetable ships inside the app.</p>
+  </div>
+
+  <div class="card">
+    <h2>Your data stays on your phone</h2>
+    <p>Attendo is local-first. Everything you record stays on your device until you
+    export it yourself. Optional community features and GitHub sign-in are
+    <strong>under development and are not part of the published v1.1 release</strong>;
+    the <a href="privacy/">privacy policy</a> describes what they will involve.</p>
+  </div>
+
+  <div class="card">
+    <h2>Get the app</h2>
+    <p>Attendo is free and open source (MIT), and is not on any app store.</p>
+    <a class="btn" href="https://github.com/divsysx/Attendo/releases">Download from GitHub Releases</a>
+    <a class="btn" href="https://github.com/divsysx/Attendo">Source code</a>
+  </div>
+
+  <footer>
+    <a href="privacy/">Privacy policy</a> ·
+    <a href="terms/">Terms of Service</a> ·
+    <a href="https://github.com/divsysx/Attendo/issues">Report an issue</a> ·
+    Attendo is a project by <a href="https://github.com/divsysx">Divyansh Sharma</a>
+    and contributors.
+  </footer>
+
+</div>
+</body>
+</html>
