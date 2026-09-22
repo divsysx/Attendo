@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Attendo privacy policy — what the app stores on your device, what optional features send, and your choices.">
+<meta name="description" content="Attendo privacy policy — what the app stores on your device, what its optional online features send, and your choices.">
 <title>Attendo — Privacy Policy</title>
 <style>
   :root { color-scheme: light dark; }
@@ -34,14 +34,15 @@
 
   <a class="back" href="../">&larr; Attendo</a>
   <h1>Privacy Policy</h1>
-  <p class="tagline">Effective 13 September 2026 · Applies to the Attendo Android app
+  <p class="tagline">Effective 23 September 2026 · Applies to the Attendo Android app
   and this website.</p>
 
   <h2>The short version</h2>
   <p>Attendo is local-first. Your attendance data, timetable, and settings live on your
-  phone. Nothing about your attendance is sent anywhere unless you deliberately use an
-  optional online feature. We don't sell data, we don't run ads, and we don't build
-  advertising profiles.</p>
+  phone. Two things can leave it, and only if you choose them: anonymous room reports you
+  post to the community board, and — if you sign in with GitHub — the private copy of
+  your attendance that Attendo keeps for your account so your other phones can stay in
+  step. We don't sell data, we don't run ads, and we don't build advertising profiles.</p>
 
   <h2>What stays on your device</h2>
   <ul>
@@ -51,38 +52,76 @@
     attendance data can be exported in CSV format. Files are created only when you
     choose to export and are not uploaded by the app.</li>
   </ul>
+  <p>If you never sign in and never post a report, nothing you record leaves your phone.</p>
 
   <h2>Optional community reporting</h2>
-  <p><em>Not in a published release.</em> Community reporting is under development and is
-  not part of the published v1.1 release. This section describes what it will involve once
-  it ships.</p>
   <p>Attendo can send anonymous room-availability reports to a shared community board so
   other students can see which rooms are free right now. If you use this feature, your
   report content (room, time, observation type) and a randomly generated community
   identifier are sent to our backend and shown to other users. Community features can be
   used without an account.</p>
+  <p>That identifier is not your name, your email address, or a device identifier, and it
+  is not linked to your attendance records. Reports you post are visible to other Attendo
+  users, so please don't put anything personal in them.</p>
 
   <h2>GitHub sign-in</h2>
-  <p><em>Not in a published release.</em> GitHub sign-in is under development and is not
-  part of the published v1.1 release. This section describes what it will involve once it
-  ships.</p>
-  <p>Attendo offers optional sign-in with GitHub. If you use it, GitHub shares your
-  name, email address, and profile picture with Attendo. We use this information only
-  to create and recognise your account and to keep your community history attached to
-  it. We do not use it for marketing and do not share it with anyone else. You can
-  disconnect or delete your account at any time (see below).</p>
+  <p>Attendo offers optional sign-in with GitHub. Signing in happens on GitHub's own
+  page: Attendo never sees your GitHub password, and it receives no access to your
+  repositories.</p>
+  <p>Attendo uses the result for one thing — recognising which account is yours. It reads
+  your account identifier and whether that account has a GitHub login attached to it, and
+  nothing else. It does not read your name, email address, profile picture, or any other
+  profile information. The name Attendo greets you with is a display name you type
+  yourself in Settings.</p>
+  <p>You can also use Attendo without signing in at all, in which case none of this
+  applies. You can disconnect at any time (see below).</p>
+
+  <h2>Syncing your attendance</h2>
+  <p>Signing in with GitHub also turns on attendance syncing. This is what makes a second
+  phone, or the same phone after a reinstall, carry on where you left off — and it is the
+  only way your attendance is ever uploaded.</p>
+  <p><strong>What is uploaded,</strong> to a private copy held for your account and
+  readable by no other user:</p>
+  <ul>
+    <li>Your courses — names, codes, whether each is archived, and each course's own
+    attendance target.</li>
+    <li>Your recurring timetable patterns — day, start hour, length, room, faculty code,
+    and class kind.</li>
+    <li>Your individual class records — date, hour, whether you attended and why not,
+    room, class kind, and any note you attached to that class.</li>
+    <li>Your semesters, including archived ones, and your attendance history within
+    them.</li>
+    <li>Your settings — term dates, holidays, working Saturdays, your overall target, the
+    default target for new courses, your section and batch, your display name, and
+    whether you joined mid-semester and when.</li>
+  </ul>
+  <p><strong>How it is kept in step.</strong> Each row carries the time your phone last
+  changed it, and the most recent change wins. Deletions are recorded rather than erased
+  immediately, so that deleting a course on one phone also removes it from your other
+  phones instead of being restored by them. Sync runs on its own while you are online, and
+  <em>Sync now</em> in Settings forces it immediately.</p>
+  <p><strong>What it is not.</strong> It is not shared with other students, it is not
+  used for anything except syncing your own devices, and it is not read by us except where
+  you ask us to help with a problem or ask us to delete it. Signing out stops syncing but
+  deletes nothing.</p>
 
   <h2>Analytics</h2>
-  <p>The app collects anonymous, aggregate usage statistics that help us understand
-  whether and how widely features are used — for example, that a screen was opened a
-  certain number of times. These statistics are not linked to your name, email, or the
-  content of your attendance records.</p>
+  <p>The app collects anonymous, aggregate usage statistics through Google Firebase
+  Analytics. What is recorded is a small set of counters about the in-app update flow —
+  that an update check was made, that an update was found, that a download was started,
+  completed or failed verification, and that an install was launched. These events carry
+  no parameters, no screen names, and nothing about your courses or attendance, and they
+  are not linked to your name, your email, your account, or the content of your records.</p>
+  <p>Attendo shows no ads and uses no advertising identifier; the advertising-ID
+  permission the analytics library asks for is explicitly removed from the app.</p>
 
   <h2>What we never do</h2>
   <ul>
     <li>Sell your personal data.</li>
     <li>Share your personal data with third parties for their own purposes.</li>
-    <li>Read or upload your attendance data, backups, or exports.</li>
+    <li>Upload your attendance, backups, or exports — except to the private copy held for
+    your own account, when you have signed in and syncing is on.</li>
+    <li>Read your GitHub profile beyond which account you are.</li>
     <li>Send you marketing or sell advertising.</li>
   </ul>
 
@@ -93,15 +132,25 @@
     <li><strong>Community data:</strong> signing out of the community feature removes the
     community identity from your device; reports you have contributed remain on the
     community board unless you ask us to remove them.</li>
-    <li><strong>Account data:</strong> to delete your account and its community history,
-    contact us at the address below and we will remove it.</li>
+    <li><strong>Account data:</strong> the copy held for your account stays there until
+    it is removed, so that your phones can keep syncing. To delete your account and
+    everything held for it — the attendance copy and the community history — contact us at
+    the address below and we will remove it. Attendo has no in-app account deletion, and
+    signing out does not delete anything.</li>
   </ul>
 
   <h2>Third-party services</h2>
-  <p>The optional online features rely on Supabase (backend hosting) and, if you sign
-  in, GitHub (authentication); neither is part of the published v1.1 release. Each is
-  governed by its own privacy policy. Updates for the app are checked against GitHub
-  Releases.</p>
+  <p>The optional online features rely on:</p>
+  <ul>
+    <li><strong>Supabase</strong> — backend hosting for the community board and for the
+    private copy of your attendance. Protected by row-level rules that scope each
+    account's data to that account.</li>
+    <li><strong>GitHub</strong> — authentication when you choose to sign in, and the
+    source of app update releases, which the app checks for.</li>
+    <li><strong>Google Firebase Analytics</strong> — the anonymous aggregate statistics
+    described above.</li>
+  </ul>
+  <p>Each is governed by its own privacy policy.</p>
 
   <h2>Children</h2>
   <p>Attendo is intended for university students and is not directed at children under 13.</p>
@@ -109,6 +158,10 @@
   <h2>Changes to this policy</h2>
   <p>If this policy changes materially, the change will be noted here with a new
   effective date.</p>
+  <p><em>23 September 2026:</em> GitHub sign-in, attendance syncing and community
+  reporting are now part of the released app. The sections above were rewritten to
+  describe what they actually do, replacing the earlier description of them as
+  unreleased features.</p>
 
   <h2>Contact</h2>
   <p>Questions or deletion requests: <a href="mailto:divyanshssharma1@gmail.com">divyanshssharma1@gmail.com</a>,
