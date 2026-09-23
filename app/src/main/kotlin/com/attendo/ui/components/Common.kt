@@ -162,8 +162,13 @@ fun LoadingPane(modifier: Modifier = Modifier) {
 }
 
 /**
- * A yes/no dialog. Used for the handful of actions that lose data — deleting a course
- * takes every session it ever had with it.
+ * A yes/no dialog. Used for the handful of actions that deserve a second look before they
+ * happen — deleting a course takes every session it ever had with it.
+ *
+ * [destructive] colours the confirm label as a warning. It defaults to true because losing
+ * data is what most of these dialogs are for, and a confirmation that is *not* a warning
+ * (applying a target to every course) has to say so, or the red text teaches the student to
+ * read a routine choice as a dangerous one.
  */
 @Composable
 fun ConfirmDialog(
@@ -172,6 +177,7 @@ fun ConfirmDialog(
     confirmLabel: String = "Delete",
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    destructive: Boolean = true,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -184,7 +190,14 @@ fun ConfirmDialog(
                     onDismiss()
                 },
             ) {
-                Text(confirmLabel, color = MaterialTheme.colorScheme.error)
+                Text(
+                    text = confirmLabel,
+                    color = if (destructive) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
             }
         },
         dismissButton = {

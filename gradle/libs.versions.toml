@@ -12,6 +12,20 @@ serialization = "1.7.3"
 googleServices = "4.5.0"
 firebaseBom = "34.18.0"
 junit = "4.13.2"
+# Attendance Sync's regression tests run the *real* Room database on the JVM, because the
+# failure they exist for — a unique-constraint violation inside `applySemesters` — only
+# exists in the interaction between the sync store, Room's generated DAOs and the schema's
+# indexes. A test against a hand-written fake would have agreed with the bug. Robolectric
+# supplies the Android runtime Room needs; androidx.test supplies the Context.
+robolectric = "4.14.1"
+androidxTestCore = "1.6.1"
+# The Supabase community client and its HTTP engine. 3.0.3 is the newest release
+# built with this project's Kotlin (2.1.0) — supabase-kt 3.1+ needs Kotlin 2.2+,
+# and upgrading the whole toolchain is not part of the community feature. OkHttp is
+# the engine Realtime needs (WebSocket capability); the update system's
+# HttpURLConnection client is untouched.
+supabaseKt = "3.0.3"
+ktor = "3.0.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +44,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
@@ -37,8 +52,18 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 
+# Community: the Supabase client (BOM-managed modules) and its Ktor engine.
+# The module is `auth-kt` — the BOM's name for the GoTrue/auth module.
+supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version.ref = "supabaseKt" }
+supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
+supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt" }
+supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt" }
+ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
+
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,6 +1,7 @@
 package com.attendo.data
 
 import androidx.room.withTransaction
+import com.attendo.core.data.MigrationPlan
 import com.attendo.core.data.SeedProposal
 import com.attendo.core.engine.DayPlan
 import com.attendo.core.engine.SessionGenerator
@@ -9,13 +10,18 @@ import com.attendo.core.model.AcademicCalendar
 import com.attendo.core.model.CancellationReason
 import com.attendo.core.model.ClassSession
 import com.attendo.core.model.Course
+import com.attendo.core.model.Percent
 import com.attendo.core.model.SessionKind
 import com.attendo.core.model.SessionPattern
 import com.attendo.core.model.SessionStatus
 import com.attendo.core.model.UnitMask
 import com.attendo.data.db.AttendoDatabase
+import com.attendo.data.db.CourseEntity
+import com.attendo.data.db.PatternEntity
+import com.attendo.data.db.SessionEntity
 import com.attendo.data.db.toEntity
 import com.attendo.data.db.toModel
+import com.attendo.data.sync.AttendanceSyncStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
@@ -42,11 +48,84 @@ class AttendanceRepository(
     private val sessionDao = database.sessionDao()
 
     /**
+     * The delete handoff: rows go to it before they are removed, so the cloud can be told.
+     *
+     * Constructed here rather than injected because it is the local half of the sync, and
+     * this class is the only thing that removes attendance rows. A delete that skipped it
+     * would be reversed by the next pull — the cloud would still hold the row, and applying
+     * it would put it back — which is why every `delete` below reads first and deletes
+     * second.
+     */
+    private val syncStore by lazy { AttendanceSyncStore(database) }
+
+    /**
      * The wall-clock instant for row timestamps. Named so the backlog functions can take
      * a `now: LocalDateTime` parameter — the eligibility moment, which needs the time of
      * day — without shadowing the class's [now].
      */
     private fun nowInstant(): Instant = now()
+
+    // ---- what a local write owes the cloud ----------------------------------
+
+    /**
+     * Every write below stamps two columns the rest of the app never reads.
+     *
+     * `clientUpdatedAt` is the device-clock instant of the edit, and it is the only thing
+     * that decides, here and on the server, whether this write beats what the cloud holds.
+     * `dirty` says the row has an edit the cloud has not confirmed, and it is what an
+     * incremental push reads: after the first push of an install, `dirty` *is* the outbox.
+     * A write that set neither would be a write that never reached the cloud and never
+     * would, silently, for the life of the account.
+     *
+     * They are stamped here, at the one boundary every attendance write passes through,
+     * rather than in `toEntity()` — the `:core` models carry no cloud identity by design,
+     * and `EntitySyncColumnsTest` pins that a model rebuilt into an entity reads as "never
+     * synced". Stamping the mapper would put a cloud identity on rows that never had one.
+     */
+    private fun CourseEntity.owed(at: Long): CourseEntity =
+        copy(clientUpdatedAt = at, dirty = true)
+
+    private fun PatternEntity.owed(at: Long): PatternEntity =
+        copy(clientUpdatedAt = at, dirty = true)
+
+    private fun SessionEntity.owed(at: Long): SessionEntity =
+        copy(clientUpdatedAt = at, dirty = true)
+
+    /**
+     * Writes edited rows back without losing the identity the cloud knows them by.
+     *
+     * `@Update` replaces the whole row, and an entity rebuilt from a `:core` model has no
+     * `cloudId` — so a plain update would null it, and the next push would upload the row
+     * as a new one under a fresh id. Two rows in the cloud, one class on the phone. The
+     * identity is read back from the table and carried forward, which is the only thing an
+     * edit needs from the row it replaces. (`deletedAt` needs nothing: a locally present
+     * row is never tombstoned — a delete removes it, and a tombstone that arrives from the
+     * cloud removes it too — so the column is null on every row these can be handed.)
+     *
+     * In a transaction because the read and the write must see the same table: the push
+     * path assigns identities too, and an assignment landing between these two statements
+     * would be overwritten with the null this read did not see.
+     */
+    private suspend fun updateCourses(rows: List<CourseEntity>, at: Long = nowInstant().toEpochMilli()) =
+        database.withTransaction {
+            if (rows.isEmpty()) return@withTransaction
+            val identities = courseDao.cloudIdentities().associate { it.id to it.cloudId }
+            courseDao.updateAll(rows.map { it.copy(cloudId = identities[it.id]).owed(at) })
+        }
+
+    private suspend fun updatePatterns(rows: List<PatternEntity>, at: Long = nowInstant().toEpochMilli()) =
+        database.withTransaction {
+            if (rows.isEmpty()) return@withTransaction
+            val identities = patternDao.cloudIdentities().associate { it.id to it.cloudId }
+            patternDao.updateAll(rows.map { it.copy(cloudId = identities[it.id]).owed(at) })
+        }
+
+    private suspend fun updateSessions(rows: List<SessionEntity>, at: Long = nowInstant().toEpochMilli()) =
+        database.withTransaction {
+            if (rows.isEmpty()) return@withTransaction
+            val identities = sessionDao.cloudIdentities().associate { it.id to it.cloudId }
+            sessionDao.updateAll(rows.map { it.copy(cloudId = identities[it.id]).owed(at) })
+        }
 
     // ---- reads --------------------------------------------------------------
 
@@ -110,7 +189,15 @@ class AttendanceRepository(
             .filterNot { it.repeatsARetiredClass(existing, patterns) }
         if (drafts.isEmpty()) return@withTransaction 0
 
-        sessionDao.insertGenerated(drafts.map { it.toSession().toEntity() })
+        // Stamped like every other write here, and for a reason that only shows up on the
+        // second device: an unmarked session is data — the timetable's own record that the
+        // class was held and nobody has said what happened yet. Left unstamped it is invisible
+        // to the outbox after this install's initial push, so the term's unmarked days would
+        // exist on the phone that generated them and nowhere else, and the web client reading
+        // the same account would see a timetable with holes in it. `insertGenerated` ignores
+        // conflicts, so re-running this over an existing row still writes nothing.
+        val stamp = nowInstant().toEpochMilli()
+        sessionDao.insertGenerated(drafts.map { it.toSession().toEntity().owed(stamp) })
             .count { it != -1L }
     }
 
@@ -173,7 +260,7 @@ class AttendanceRepository(
      * the right row.
      */
     suspend fun materialise(draft: SessionGenerator.Draft): Long = database.withTransaction {
-        val inserted = sessionDao.insertIfAbsent(draft.toSession().toEntity())
+        val inserted = sessionDao.insertIfAbsent(draft.toSession().toEntity().owed(nowInstant().toEpochMilli()))
         if (inserted != -1L) inserted
         else sessionDao.byPatternAndDate(draft.patternId, draft.date)?.id ?: -1L
     }
@@ -213,15 +300,16 @@ class AttendanceRepository(
     suspend fun approveDay(date: LocalDate, calendar: AcademicCalendar): Int =
         database.withTransaction {
             val instant = now()
+            val stamp = instant.toEpochMilli()
             val plan = dayPlan(date, calendar)
 
             val fresh = plan.missing.map { draft ->
                 SessionOps.approve(draft.toSession(), instant).toEntity()
-            }
+            }.map { it.owed(stamp) }
             val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
 
             val pending = plan.awaitingReview.map { SessionOps.approve(it, instant).toEntity() }
-            sessionDao.updateAll(pending)
+            updateSessions(pending, stamp)
 
             inserted + pending.size
         }
@@ -240,15 +328,16 @@ class AttendanceRepository(
     suspend fun markDayAbsent(date: LocalDate, calendar: AcademicCalendar): Int =
         database.withTransaction {
             val instant = now()
+            val stamp = instant.toEpochMilli()
             val plan = dayPlan(date, calendar)
 
             val fresh = plan.missing.map { draft ->
                 SessionOps.markAbsent(draft.toSession(), instant).toEntity()
-            }
+            }.map { it.owed(stamp) }
             val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
 
             val pending = plan.awaitingReview.map { SessionOps.markAbsent(it, instant).toEntity() }
-            sessionDao.updateAll(pending)
+            updateSessions(pending, stamp)
 
             inserted + pending.size
         }
@@ -273,7 +362,7 @@ class AttendanceRepository(
             .map { it.toModel() }
             .filter { it.isAwaitingReview }
             .map { SessionOps.cancel(it, CancellationReason.HOLIDAY, instant, it.note).toEntity() }
-        sessionDao.updateAll(cancelled)
+        updateSessions(cancelled, instant.toEpochMilli())
         cancelled.size
     }
 
@@ -293,7 +382,7 @@ class AttendanceRepository(
             .map { it.toModel() }
             .filter { it.isCancelled && it.cancellationReason == CancellationReason.HOLIDAY }
             .map { SessionOps.reopen(it, instant).toEntity() }
-        sessionDao.updateAll(reopened)
+        updateSessions(reopened, instant.toEpochMilli())
         reopened.size
     }
 
@@ -352,13 +441,14 @@ class AttendanceRepository(
         now: LocalDateTime,
     ): Int = database.withTransaction {
         val instant = nowInstant()
+        val stamp = instant.toEpochMilli()
         val (pending, drafts) = backlogBetween(from, through, calendar, now)
 
-        val fresh = drafts.map { SessionOps.markAbsent(it.toSession(), instant).toEntity() }
+        val fresh = drafts.map { SessionOps.markAbsent(it.toSession(), instant).toEntity().owed(stamp) }
         val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
 
         val updated = SessionOps.markAllAbsent(pending, instant).map { it.toEntity() }
-        sessionDao.updateAll(updated)
+        updateSessions(updated, stamp)
 
         inserted + updated.size
     }
@@ -382,15 +472,16 @@ class AttendanceRepository(
         now: LocalDateTime,
     ): Int = database.withTransaction {
         val instant = nowInstant()
+        val stamp = instant.toEpochMilli()
         val (pending, drafts) = backlogBetween(from, through, calendar, now)
 
         val fresh = drafts.map {
             SessionOps.cancel(it.toSession(), reason, instant).toEntity()
-        }
+        }.map { it.owed(stamp) }
         val inserted = sessionDao.insertGenerated(fresh).count { it != -1L }
 
         val updated = SessionOps.cancelAll(pending, reason, instant).map { it.toEntity() }
-        sessionDao.updateAll(updated)
+        updateSessions(updated, stamp)
 
         inserted + updated.size
     }
@@ -410,8 +501,12 @@ class AttendanceRepository(
      * enforce on its own.
      */
     suspend fun reopen(session: ClassSession) = database.withTransaction {
-        session.movedToSessionId?.let { sessionDao.deleteById(it) }
-        sessionDao.update(SessionOps.reopen(session, now()).toEntity())
+        val at = now()
+        session.movedToSessionId?.let { id ->
+            sessionDao.byId(id)?.let { syncStore.recordDeleted(AttendanceSyncStore.DeletedRows(sessions = listOf(it)), at) }
+            sessionDao.deleteById(id)
+        }
+        updateSessions(listOf(SessionOps.reopen(session, at).toEntity()), at.toEpochMilli())
     }
 
     suspend fun resize(session: ClassSession, unitsPlanned: Int) =
@@ -431,16 +526,21 @@ class AttendanceRepository(
         newUnits: Int = session.unitsPlanned,
         note: String? = null,
     ) = database.withTransaction {
+        val instant = now()
+        val stamp = instant.toEpochMilli()
         val moved = SessionOps.reschedule(
             session = session,
             newDate = newDate,
             newStartHour = newStartHour,
             newUnits = newUnits,
-            now = now(),
+            now = instant,
             note = note,
         )
-        val replacementId = sessionDao.insert(moved.replacement.toEntity())
-        sessionDao.update(SessionOps.linkReplacement(moved.cancelledOriginal, replacementId).toEntity())
+        val replacementId = sessionDao.insert(moved.replacement.toEntity().owed(stamp))
+        updateSessions(
+            listOf(SessionOps.linkReplacement(moved.cancelledOriginal, replacementId).toEntity()),
+            stamp,
+        )
     }
 
     suspend fun addAdhoc(
@@ -452,7 +552,9 @@ class AttendanceRepository(
         room: String? = null,
         note: String? = null,
     ): Long = sessionDao.insert(
-        SessionOps.adhoc(courseId, date, startHour, unitsPlanned, kind, room, note).toEntity(),
+        SessionOps.adhoc(courseId, date, startHour, unitsPlanned, kind, room, note)
+            .toEntity()
+            .owed(nowInstant().toEpochMilli()),
     )
 
     /**
@@ -464,25 +566,87 @@ class AttendanceRepository(
      * A rescheduled original's replacement goes with it.
      */
     suspend fun deleteSession(session: ClassSession) = database.withTransaction {
+        val at = now()
+        // Read before removing: a tombstone carries the row's own columns, so a delete that
+        // did not hand them over would leave the row alive in the cloud and the next pull
+        // would put it straight back on this phone.
+        val removed = listOfNotNull(
+            session.movedToSessionId?.let { sessionDao.byId(it) },
+            sessionDao.byId(session.id),
+        )
+        syncStore.recordDeleted(AttendanceSyncStore.DeletedRows(sessions = removed), at)
         session.movedToSessionId?.let { sessionDao.deleteById(it) }
         sessionDao.deleteById(session.id)
     }
 
     // ---- courses ------------------------------------------------------------
 
-    suspend fun addCourse(course: Course): Long = courseDao.insert(course.toEntity())
+    suspend fun addCourse(course: Course): Long =
+        courseDao.insert(course.toEntity().owed(nowInstant().toEpochMilli()))
 
-    suspend fun updateCourse(course: Course) = courseDao.update(course.toEntity())
+    suspend fun updateCourse(course: Course) = updateCourses(listOf(course.toEntity()))
+
+    /**
+     * Sets one target on every course the student is still tracking, and answers how many.
+     *
+     * The count is returned rather than left to the caller so the number the confirmation
+     * dialog promised and the number actually written come from the same read — a count
+     * taken by the UI a moment earlier could describe a list that has since changed.
+     *
+     * Archived courses are left alone (see [CourseDao.active]). The write goes through
+     * [updateCourses], so every affected row is stamped dirty and carries its cloud
+     * identity forward: a bulk target change syncs exactly like six individual ones.
+     */
+    suspend fun setTargetForActiveCourses(target: Percent): Int {
+        val rows = courseDao.active()
+        if (rows.isEmpty()) return 0
+        updateCourses(rows.map { it.copy(targetBasisPoints = target.basisPoints) })
+        return rows.size
+    }
 
     suspend fun setArchived(course: Course, archived: Boolean) =
-        courseDao.update(course.copy(archived = archived).toEntity())
+        updateCourses(listOf(course.copy(archived = archived).toEntity()))
 
-    /** Deletes a course and, by cascade, its patterns and every session it ever had. */
-    suspend fun deleteCourse(course: Course) = courseDao.deleteById(course.id)
+    /**
+     * Deletes a course and, by cascade, its patterns and every session it ever had.
+     *
+     * The cascade is exactly why this reads all three tables first. The local delete is
+     * one statement, but the cloud has to be told about three tables' worth of rows, and a
+     * row the cloud still holds is a row the next pull brings back — a course the student
+     * deleted returning from the dead, with its attendance.
+     */
+    suspend fun deleteCourse(course: Course) = database.withTransaction {
+        val at = now()
+        syncStore.recordDeleted(
+            AttendanceSyncStore.DeletedRows(
+                courses = listOfNotNull(courseDao.byId(course.id)),
+                patterns = patternDao.all().filter { it.courseId == course.id },
+                sessions = sessionDao.forCourse(course.id),
+            ),
+            at,
+        )
+        courseDao.deleteById(course.id)
+    }
 
     // ---- patterns -----------------------------------------------------------
 
-    suspend fun addPattern(pattern: SessionPattern): Long = patternDao.insert(pattern.toEntity())
+    /**
+     * Hands a body of rows to the cloud as deletions, before the caller removes them locally.
+     *
+     * The rollover path's equivalent of the read-before-delete [deleteCourse] does: a term
+     * being cleared is thousands of rows across all four tables, and every one of them that the
+     * cloud still holds is a row the next pull puts back — including the semester itself, which
+     * would arrive beside the new one and give the student two courses of every kind.
+     *
+     * Exposed rather than duplicated because [AttendanceSyncStore] is this class's, and because
+     * the ordering that makes it safe — tombstones committed with the delete, in one
+     * transaction — has to be the caller's too. See [com.attendo.data.RolloverRepository].
+     */
+    suspend fun recordRemoval(rows: AttendanceSyncStore.DeletedRows, at: Instant) =
+        syncStore.recordDeleted(rows, at)
+
+    suspend fun addPattern(pattern: SessionPattern): Long =
+        patternDao.insert(pattern.toEntity().owed(nowInstant().toEpochMilli()))
 
     /**
      * Edits a slot without rewriting history.
@@ -498,18 +662,27 @@ class AttendanceRepository(
         replacement: SessionPattern,
         lastEffective: LocalDate,
     ): Long = database.withTransaction {
-        patternDao.update(old.retiredAfter(lastEffective).toEntity())
+        val at = now()
+        val stamp = at.toEpochMilli()
+        // The dropped rows are unreviewed and were generated from a slot that is being
+        // rewritten, so a device that has not seen this edit would otherwise regenerate
+        // them on its next pass. Read first — see [deleteCourse].
+        syncStore.recordDeleted(
+            AttendanceSyncStore.DeletedRows(sessions = sessionDao.unreviewedAfter(old.id, lastEffective)),
+            at,
+        )
+        updatePatterns(listOf(old.retiredAfter(lastEffective).toEntity()), stamp)
         sessionDao.deleteUnreviewedAfter(old.id, lastEffective)
         patternDao.insert(
             replacement.copy(
                 id = 0L,
                 courseId = old.courseId,
                 effectiveFrom = maxOf(replacement.effectiveFrom, lastEffective.plusDays(1)),
-            ).toEntity(),
+            ).toEntity().owed(stamp),
         )
     }
 
-    suspend fun updatePattern(pattern: SessionPattern) = patternDao.update(pattern.toEntity())
+    suspend fun updatePattern(pattern: SessionPattern) = updatePatterns(listOf(pattern.toEntity()))
 
     /**
      * Retires a pattern from [lastEffective] onwards without replacing it — a slot that
@@ -517,7 +690,12 @@ class AttendanceRepository(
      */
     suspend fun retirePattern(pattern: SessionPattern, lastEffective: LocalDate) =
         database.withTransaction {
-            patternDao.update(pattern.retiredAfter(lastEffective).toEntity())
+            val at = now()
+            syncStore.recordDeleted(
+                AttendanceSyncStore.DeletedRows(sessions = sessionDao.unreviewedAfter(pattern.id, lastEffective)),
+                at,
+            )
+            updatePatterns(listOf(pattern.retiredAfter(lastEffective).toEntity()), at.toEpochMilli())
             sessionDao.deleteUnreviewedAfter(pattern.id, lastEffective)
         }
 
@@ -527,6 +705,14 @@ class AttendanceRepository(
      * [com.attendo.data.db.SessionDao.deleteUnreviewedForPattern].
      */
     suspend fun deletePattern(pattern: SessionPattern) = database.withTransaction {
+        val at = now()
+        syncStore.recordDeleted(
+            AttendanceSyncStore.DeletedRows(
+                patterns = listOfNotNull(patternDao.byId(pattern.id)),
+                sessions = sessionDao.unreviewedForPattern(pattern.id),
+            ),
+            at,
+        )
         sessionDao.deleteUnreviewedForPattern(pattern.id)
         patternDao.deleteById(pattern.id)
     }
@@ -552,18 +738,63 @@ class AttendanceRepository(
         proposals: List<SeedProposal>,
         semesterId: Long? = null,
     ): Int = database.withTransaction {
+        val stamp = nowInstant().toEpochMilli()
         proposals.forEach { proposal ->
             val course = proposal.course.copy(
                 id = 0L,
                 semesterId = semesterId ?: proposal.course.semesterId,
             )
-            val courseId = courseDao.insert(course.toEntity())
+            val courseId = courseDao.insert(course.toEntity().owed(stamp))
             patternDao.insertAll(
-                proposal.withCourseId(courseId).patterns.map { it.copy(id = 0L).toEntity() },
+                proposal.withCourseId(courseId).patterns.map { it.copy(id = 0L).toEntity().owed(stamp) },
             )
         }
         proposals.size
     }
 
-    private suspend fun save(session: ClassSession) = sessionDao.update(session.toEntity())
+    private suspend fun save(session: ClassSession) = updateSessions(listOf(session.toEntity()))
+
+    // ---- timetable revisions ------------------------------------------------
+
+    /**
+     * Carries out one timetable migration — see [com.attendo.core.data.TimetableMigration].
+     *
+     * Every write goes through a primitive that already exists, and every one of them is the
+     * non-destructive half of the pair: a withdrawn slot is *retired* rather than deleted, so
+     * the sessions it produced keep pointing at it and only unreviewed future rows go; a new
+     * slot is inserted beside the old one rather than replacing it; a course is renamed, never
+     * recreated. Nothing here deletes a course or a marked session, which is the property the
+     * whole migration exists to preserve.
+     *
+     * No enclosing transaction. Each change is one course's worth of writes, committed on its
+     * own, so a revision interrupted halfway leaves some courses migrated and the rest still to
+     * do — and re-running it finishes the job, because the plan is the difference between what
+     * the student has and what the timetable says, which the courses already done no longer
+     * contribute to.
+     *
+     * @return how many courses were changed.
+     */
+    suspend fun applyTimetableMigration(plan: MigrationPlan): Int {
+        var changed = 0
+        plan.changes.filterNot { it.isEmpty }.forEach { change ->
+            val course = courseDao.byId(change.courseId) ?: return@forEach
+            if (change.renamed) {
+                updateCourses(
+                    listOf(course.copy(code = change.toCode, name = change.toName)),
+                )
+            }
+            change.retired.forEach { pattern ->
+                // Clamped so a slot added after the revision date closes on the day it opened
+                // rather than before it — SessionPattern rejects an end before its start, and a
+                // pattern the student added last week is not one this revision can un-happen.
+                retirePattern(pattern, maxOf(plan.effectiveFrom.minusDays(1), pattern.effectiveFrom))
+            }
+            change.added.forEach { pattern ->
+                patternDao.insert(pattern.copy(id = 0L, courseId = change.courseId).toEntity()
+                    .owed(nowInstant().toEpochMilli()))
+            }
+            changed++
+        }
+        return changed
+    }
 }

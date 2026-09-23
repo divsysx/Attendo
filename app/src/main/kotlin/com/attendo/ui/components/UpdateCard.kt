@@ -72,7 +72,7 @@ internal fun UpdateCard(
         }
 
         is UpdateState.Installing -> UpdateCardFrame(state.manifest, modifier) {
-            StatusBody("Android will take it from here — it will ask you to confirm the installation.")
+            StatusBody("Android will take it from here. It will ask you to confirm the installation.")
         }
     }
 }

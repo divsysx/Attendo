@@ -24,7 +24,7 @@ import java.io.File
 class AutoBackupConfigTest {
 
     private val manifest: File =
-        generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
+        generateSequence(File(System.getProperty("user.dir") ?: ".")) { it.parentFile }
             .map { File(it, "src/main/AndroidManifest.xml") }
             .first(File::exists)
 

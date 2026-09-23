@@ -126,7 +126,7 @@ private fun RolloverChoice(
         )
         Text(
             text = "This device still holds ${state.current.label}, but this version of Attendo " +
-                "carries ${state.bundled.label}. Start the new semester to switch over — the " +
+                "carries ${state.bundled.label}. Start the new semester to switch over. The " +
                 "previous semester's data is removed from this device, so save a copy first.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

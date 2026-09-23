@@ -25,8 +25,44 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE id = :id")
     suspend fun byId(id: Long): CourseEntity?
 
+    // ---- cloud sync (see AttendanceSyncDao) --------------------------------
+
+    /** The local row the cloud id names, or null when this device has never seen it. */
+    @Query("SELECT * FROM courses WHERE cloudId = :cloudId")
+    suspend fun byCloudId(cloudId: String): CourseEntity?
+
+    /** Rows with local edits the cloud has not confirmed. */
+    @Query("SELECT * FROM courses WHERE dirty = 1")
+    suspend fun dirty(): List<CourseEntity>
+
+    /**
+     * Clears the flag only if the row has not been edited since it was uploaded.
+     *
+     * `dirty = 0` unconditionally would be wrong in one specific way: an edit made by the
+     * student *while the upload was in flight* sets the flag again, and clearing it on the
+     * response would lose that edit's upload — silently, until something else touched the
+     * row. Comparing the timestamp it was pushed at means the flag survives exactly when
+     * there is something left to send.
+     */
+    @Query("UPDATE courses SET dirty = 0 WHERE id = :id AND clientUpdatedAt = :clientUpdatedAt")
+    suspend fun clearDirtyIfUnchanged(id: Long, clientUpdatedAt: Long)
+
+    @Query("SELECT id, cloudId FROM courses WHERE cloudId IS NOT NULL")
+    suspend fun cloudIdentities(): List<CloudIdentity>
+
     @Query("SELECT * FROM courses")
     suspend fun all(): List<CourseEntity>
+
+    /**
+     * Every course still being tracked, for the bulk target apply.
+     *
+     * Archived courses are excluded in SQL rather than by the caller. "Apply to all my
+     * courses" must not reach a course the student has finished with — its target is part
+     * of a closed record, and rewriting it would change a figure they can no longer see
+     * why moved.
+     */
+    @Query("SELECT * FROM courses WHERE archived = 0")
+    suspend fun active(): List<CourseEntity>
 
     @Insert
     suspend fun insert(course: CourseEntity): Long
@@ -43,6 +79,10 @@ interface CourseDao {
 
     @Update
     suspend fun update(course: CourseEntity)
+
+    /** One statement for a batch of edited rows — see [SessionDao.updateAll]. */
+    @Update
+    suspend fun updateAll(courses: List<CourseEntity>)
 
     @Delete
     suspend fun delete(course: CourseEntity)
@@ -93,6 +133,21 @@ interface SemesterDao {
     @Query("SELECT * FROM semesters WHERE year = :year AND type = :type")
     suspend fun byTerm(year: Int, type: SemesterType): SemesterEntity?
 
+    // ---- cloud sync (see AttendanceSyncDao) --------------------------------
+
+    @Query("SELECT * FROM semesters WHERE cloudId = :cloudId")
+    suspend fun byCloudId(cloudId: String): SemesterEntity?
+
+    @Query("SELECT * FROM semesters WHERE dirty = 1")
+    suspend fun dirty(): List<SemesterEntity>
+
+    /** See [CourseDao.clearDirtyIfUnchanged] for why this is not an unconditional clear. */
+    @Query("UPDATE semesters SET dirty = 0 WHERE id = :id AND clientUpdatedAt = :clientUpdatedAt")
+    suspend fun clearDirtyIfUnchanged(id: Long, clientUpdatedAt: Long)
+
+    @Query("SELECT id, cloudId FROM semesters WHERE cloudId IS NOT NULL")
+    suspend fun cloudIdentities(): List<CloudIdentity>
+
     @Query("SELECT * FROM semesters")
     suspend fun all(): List<SemesterEntity>
 
@@ -108,6 +163,30 @@ interface SemesterDao {
 
     @Query("UPDATE semesters SET archived = :archived WHERE id = :id")
     suspend fun setArchived(id: Long, archived: Boolean)
+
+    /**
+     * The same write, stamped for the cloud.
+     *
+     * Archiving is an *edit*: `archived` is a column on the semester row and it is data a web
+     * client has to see, so a flip that set neither `clientUpdatedAt` nor `dirty` would be an
+     * edit the cloud never hears about — the semester would come back live on the next pull of
+     * another device, and the student's own phone would push its stale copy over it. See
+     * `CourseDao.clearDirtyIfUnchanged` for what the two columns do.
+     */
+    @Query("UPDATE semesters SET archived = :archived, clientUpdatedAt = :at, dirty = 1 WHERE id = :id")
+    suspend fun setArchivedOwed(id: Long, archived: Boolean, at: Long)
+
+    /**
+     * Removes one semester, for a tombstone arriving from the cloud.
+     *
+     * The app itself never deletes a semester — it archives them — but a semester deleted
+     * on another device has to be removable here, and leaving it would resurrect it on the
+     * next push. Courses naming it are not cascaded, because `semesterId` is deliberately
+     * not a foreign key (see [CourseEntity.semesterId]): they become courses belonging to
+     * no term, which is a state the app already models.
+     */
+    @Query("DELETE FROM semesters WHERE id = :id")
+    suspend fun deleteById(id: Long)
 
     /** Every semester, for the restore that replaces the lot. */
     @Query("DELETE FROM semesters")
@@ -129,6 +208,21 @@ interface PatternDao {
     @Query("SELECT * FROM patterns WHERE id = :id")
     suspend fun byId(id: Long): PatternEntity?
 
+    // ---- cloud sync (see AttendanceSyncDao) --------------------------------
+
+    @Query("SELECT * FROM patterns WHERE cloudId = :cloudId")
+    suspend fun byCloudId(cloudId: String): PatternEntity?
+
+    @Query("SELECT * FROM patterns WHERE dirty = 1")
+    suspend fun dirty(): List<PatternEntity>
+
+    /** See [CourseDao.clearDirtyIfUnchanged] for why this is not an unconditional clear. */
+    @Query("UPDATE patterns SET dirty = 0 WHERE id = :id AND clientUpdatedAt = :clientUpdatedAt")
+    suspend fun clearDirtyIfUnchanged(id: Long, clientUpdatedAt: Long)
+
+    @Query("SELECT id, cloudId FROM patterns WHERE cloudId IS NOT NULL")
+    suspend fun cloudIdentities(): List<CloudIdentity>
+
     @Insert
     suspend fun insert(pattern: PatternEntity): Long
 
@@ -137,6 +231,10 @@ interface PatternDao {
 
     @Update
     suspend fun update(pattern: PatternEntity)
+
+    /** One statement for a batch of edited rows — see [SessionDao.updateAll]. */
+    @Update
+    suspend fun updateAll(patterns: List<PatternEntity>)
 
     @Delete
     suspend fun delete(pattern: PatternEntity)
@@ -186,6 +284,21 @@ interface SessionDao {
     /** The row a draft would have produced, if some other write got there first. */
     @Query("SELECT * FROM sessions WHERE patternId = :patternId AND date = :date")
     suspend fun byPatternAndDate(patternId: Long, date: LocalDate): SessionEntity?
+
+    // ---- cloud sync (see AttendanceSyncDao) --------------------------------
+
+    @Query("SELECT * FROM sessions WHERE cloudId = :cloudId")
+    suspend fun byCloudId(cloudId: String): SessionEntity?
+
+    @Query("SELECT * FROM sessions WHERE dirty = 1")
+    suspend fun dirty(): List<SessionEntity>
+
+    /** See [CourseDao.clearDirtyIfUnchanged] for why this is not an unconditional clear. */
+    @Query("UPDATE sessions SET dirty = 0 WHERE id = :id AND clientUpdatedAt = :clientUpdatedAt")
+    suspend fun clearDirtyIfUnchanged(id: Long, clientUpdatedAt: Long)
+
+    @Query("SELECT id, cloudId FROM sessions WHERE cloudId IS NOT NULL")
+    suspend fun cloudIdentities(): List<CloudIdentity>
 
     /**
      * Generated sessions, inserted in bulk.
@@ -255,6 +368,23 @@ interface SessionDao {
      */
     @Query("DELETE FROM sessions WHERE patternId = :patternId AND status = 'SCHEDULED'")
     suspend fun deleteUnreviewedForPattern(patternId: Long)
+
+    /**
+     * The rows [deleteUnreviewedAfter] is about to remove, read first so they can be
+     * tombstoned.
+     *
+     * A `DELETE` cannot report what it deleted, and these two drops are the only places
+     * the app removes sessions in bulk — without reading first, every future class of a
+     * deleted pattern would stay alive in the cloud and be pulled back down on the next
+     * sync. The predicate is deliberately the same text as the delete above it: the
+     * select and the delete have to be answering about the same rows.
+     */
+    @Query("SELECT * FROM sessions WHERE patternId = :patternId AND date > :after AND status = 'SCHEDULED'")
+    suspend fun unreviewedAfter(patternId: Long, after: LocalDate): List<SessionEntity>
+
+    /** The rows [deleteUnreviewedForPattern] is about to remove. See [unreviewedAfter]. */
+    @Query("SELECT * FROM sessions WHERE patternId = :patternId AND status = 'SCHEDULED'")
+    suspend fun unreviewedForPattern(patternId: Long): List<SessionEntity>
 
     @Query("SELECT MIN(date) FROM sessions")
     suspend fun earliestDate(): LocalDate?

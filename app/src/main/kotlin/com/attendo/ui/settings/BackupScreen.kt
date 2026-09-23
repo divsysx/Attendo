@@ -82,8 +82,8 @@ internal val AUTOMATIC_BACKUP_OFF_NOTE: String =
 internal val AUTOMATIC_BACKUP_ON_NOTE: String =
     "On. Android may copy your courses and attendance to your Google account, and may put " +
         "them back if you reinstall Attendo or set up a new phone. Whether it does is up to " +
-        "Android and the phone's backup settings — it runs about once a day, while the phone " +
-        "is idle, charging and on Wi-Fi — and there is no way to check from here that a copy " +
+        "Android and the phone's backup settings. It runs about once a day, while the phone " +
+        "is idle, charging and on Wi-Fi, and there is no way to check from here that a copy " +
         "exists. Turning this off later stops new copies but cannot delete one Android has " +
         "already stored."
 
@@ -96,7 +96,7 @@ internal val AUTOMATIC_BACKUP_CONFIRM_TITLE: String = "Turn on Android's automat
 internal val AUTOMATIC_BACKUP_CONFIRM_BODY: String =
     "Allow Android to back up your Attendo data, so it may be restored when you reinstall " +
         "the app or move to a new device. Android decides when to back up and whether to " +
-        "restore — Attendo cannot check either, and turning this off later cannot delete a " +
+        "restore. Attendo cannot check either, and turning this off later cannot delete a " +
         "copy Android has already made. For a copy you control, use Export backup."
 
 // ---- Clear all Attendo data -----------------------------------------------------
@@ -123,7 +123,7 @@ internal val CLEAR_ALL_NOTE: String =
 internal val ANDROID_RESTORE_HINT: String =
     "Reinstalled Attendo and found old data waiting? Android may restore one of " +
         "its own backups during installation. If that happens, Clear all Attendo data " +
-        "below — or Android's App info → Storage → Clear storage — starts fresh. Neither " +
+        "below starts fresh. So does Android's App info → Storage → Clear storage. Neither " +
         "deletes the backup Android or Google may already be keeping, and Attendo does not " +
         "control whether Android backs up or restores anything. A normal app update is " +
         "different: it keeps your data exactly as it is."
@@ -303,8 +303,9 @@ private fun BackupContent(
                         "screen shows.",
                 )
                 Note(
-                    "Keep it somewhere that is not this phone — a drive, or sent to yourself. A " +
-                        "backup that only exists on the phone you lose is not a backup.",
+                    "Keep it somewhere that is not this phone, like a drive, or send it to " +
+                        "yourself. A backup that only exists on the phone you lose is not a " +
+                        "backup.",
                 )
             }
         }
@@ -318,9 +319,10 @@ private fun BackupContent(
                     Text("Export attendance CSV")
                 }
                 Note(
-                    "One row per class — date, course, kind, hours planned, hours attended, " +
-                        "status, and more — for a spreadsheet, or for anyone who wants to check " +
-                        "the record. It cannot be imported back: flattening a semester into " +
+                    "Each class is one row: date, course, kind, hours planned, hours " +
+                        "attended, status, and more. Use it in a spreadsheet, or hand it to " +
+                        "anyone who wants to check the record. It cannot be imported back: " +
+                        "flattening a semester into " +
                         "rows loses which slot generated a class and which cancelled class a " +
                         "moved one replaced, and a restore that guesses at those is worse " +
                         "than no restore.",
@@ -480,8 +482,8 @@ private fun RestorePreviewDialog(
                     text = if (current == null || current.isEmpty) {
                         "There is nothing on this phone to lose."
                     } else {
-                        "Everything on this phone now — ${courseCount(current)}, " +
-                            "${classes(current.sessions)} — is deleted and replaced. Attendo " +
+                        "Everything on this phone now (${courseCount(current)}, " +
+                            "${classes(current.sessions)}) is deleted and replaced. Attendo " +
                             "saves a copy of it first, so you can undo this from this screen " +
                             "straight afterwards."
                     },

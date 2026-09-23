@@ -43,16 +43,13 @@ import com.attendo.core.model.TimeGrid
 import com.attendo.ui.components.AttendoTopBar
 import com.attendo.ui.components.ChipChoice
 import com.attendo.ui.components.KindTag
+import com.attendo.ui.components.PercentPicker
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.components.rememberEditableText
 import com.attendo.ui.hours
 import com.attendo.ui.label
 import com.attendo.ui.shortLabel
 import java.time.DayOfWeek
-
-/** The targets worth offering. 75% is the one most attendance rules actually use. */
-private val TARGET_OPTIONS: List<Percent> =
-    listOf(50.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0).map { Percent.ofPercent(it) }
 
 /** Sunday never teaches, so it is never offered. */
 private val SLOT_DAYS: List<DayOfWeek> = DayOfWeek.entries.filter { it != DayOfWeek.SUNDAY }
@@ -137,15 +134,12 @@ fun CourseEditorScreen(
             )
 
             SectionLabel("Target")
-            // A target the seeder or an older build set — 72%, say — is folded into the
-            // options, so the chip row always shows what the course is actually aiming at.
-            val targets = remember(state.target) {
-                (TARGET_OPTIONS + state.target).distinct().sorted()
-            }
-            ChipChoice(
-                options = targets,
-                selected = state.target,
-                label = { "${it.format(0)}%" },
+            // The same control the Attendance Targets screen gives the default, so the two
+            // places a target is set cannot drift into two different ideas of what a target
+            // is. This is what the course starts at; Course Detail's Target row changes it
+            // afterwards, through the same picker and the same stored field.
+            PercentPicker(
+                value = state.target,
                 onSelect = viewModel::setTarget,
             )
 

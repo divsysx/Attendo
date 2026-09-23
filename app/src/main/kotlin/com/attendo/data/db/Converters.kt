@@ -64,4 +64,34 @@ class Converters {
 
     @TypeConverter
     fun toSemesterType(value: String): SemesterType = SemesterType.valueOf(value)
+
+    // Community enums are stored by their *wire name* rather than `name`: the column
+    // then reads exactly like the server's, and a restored cache row from a newer
+    // server — one carrying a status this build never compiled — degrades to
+    // UNRECOGNIZED in fromWire instead of crashing valueOf.
+    @TypeConverter
+    fun fromReportKind(value: com.attendo.core.community.CommunityReportKind): String =
+        value.wireName.ifEmpty { value.name }
+
+    @TypeConverter
+    fun toReportKind(value: String): com.attendo.core.community.CommunityReportKind =
+        com.attendo.core.community.CommunityReportKind.fromWire(value)
+
+    @TypeConverter
+    fun fromObservationStatus(value: com.attendo.core.community.CommunityObservationStatus): String =
+        value.wireName.ifEmpty { value.name }
+
+    @TypeConverter
+    fun toObservationStatus(value: String): com.attendo.core.community.CommunityObservationStatus =
+        com.attendo.core.community.CommunityObservationStatus.fromWire(value)
+
+    // Same wire-name rule for the observation type: an unknown type from a newer
+    // server reads as PRESENT (fromWire's default), never a crash.
+    @TypeConverter
+    fun fromObservationType(value: com.attendo.core.community.CommunityObservationType): String =
+        value.wireName.ifEmpty { value.name }
+
+    @TypeConverter
+    fun toObservationType(value: String): com.attendo.core.community.CommunityObservationType =
+        com.attendo.core.community.CommunityObservationType.fromWire(value)
 }

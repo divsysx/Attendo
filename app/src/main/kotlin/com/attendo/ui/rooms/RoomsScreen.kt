@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,6 +42,10 @@ import com.attendo.ui.components.EmptyState
 import com.attendo.ui.components.LoadingPane
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.components.rememberEditableText
+import com.attendo.ui.community.CommunityStatusRow
+import com.attendo.ui.community.CommunityUiState
+import com.attendo.ui.community.CommunityViewModel
+import com.attendo.ui.community.RoomCommunityCard
 import com.attendo.ui.fullLabel
 import com.attendo.ui.shortLabel
 import com.attendo.ui.theme.bands
@@ -54,14 +61,29 @@ import java.time.DayOfWeek
 @Composable
 fun RoomsScreen(
     onOpenRoom: (String) -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: RoomsViewModel = viewModel(factory = RoomsViewModel.Factory),
+    // The app-level shared instance, passed in: one state and one Realtime channel
+    // for every community surface.
+    communityViewModel: CommunityViewModel,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val community by communityViewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { communityViewModel.onShown() }
 
     Column(Modifier.fillMaxSize()) {
         AttendoTopBar(
             title = "Rooms",
             subtitle = state.query?.let { slotHeading(it, state.isLive) },
+            // The same gear the Attendance tab has: Settings is where the term shape,
+            // backups and "My community" live, and a student who lives on the Rooms
+            // tab should not have to change tabs to reach any of it.
+            actions = {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                }
+            },
         )
 
         when {
@@ -76,6 +98,8 @@ fun RoomsScreen(
 
             else -> RoomsContent(
                 state = state,
+                community = community,
+                onCommunityRetry = communityViewModel::refresh,
                 onDay = viewModel::setDay,
                 onHour = viewModel::setHour,
                 onNow = viewModel::now,
@@ -89,6 +113,8 @@ fun RoomsScreen(
 @Composable
 private fun RoomsContent(
     state: RoomsUiState,
+    community: CommunityUiState,
+    onCommunityRetry: () -> Unit,
     onDay: (DayOfWeek) -> Unit,
     onHour: (Int) -> Unit,
     onNow: () -> Unit,
@@ -132,7 +158,10 @@ private fun RoomsContent(
             )
         }
 
-        if (!state.isLive) {
+        // The button belongs to a view the student navigated to; the default view — even
+        // opened outside teaching hours, when there is no live slot for it to equal — is
+        // already "now" and offering a way back to where they are would be noise.
+        if (!state.isRightNow) {
             item(key = "now") {
                 TextButton(onClick = onNow) {
                     Icon(AttendoIcons.Schedule, contentDescription = null)
@@ -156,7 +185,7 @@ private fun RoomsContent(
             )
         }
 
-        if (state.isFiltered && state.matchCount == 0) {
+        if (state.isFiltered && state.matchCount == 0 && !state.isNonTeachingDay) {
             item(key = "no-match") {
                 Text(
                     text = "No room called \"${state.filter}\". The timetable names " +
@@ -167,40 +196,84 @@ private fun RoomsContent(
             }
         }
 
-        if (state.isNonTeachingToday) {
+        if (state.isNonTeachingDay) {
             item(key = "non-teaching") {
+                // "today" on the right-now view (live or not — a Sunday afternoon is still
+                // today), the picked date otherwise — the state is about whichever day the
+                // query names, and the copy says which.
+                val whenLine = if (state.isRightNow) "today"
+                else state.queryDate?.let { "on ${it.shortLabel()}" } ?: "then"
                 Text(
-                    text = "Not a teaching day — ${state.notTodayReason.lowercase()}. " +
-                        "No rooms are in use today.",
+                    text = "Not a teaching day. ${state.nonTeachingReason.lowercase()}. " +
+                        "No rooms are in use $whenLine.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else if (state.free.isNotEmpty()) {
-            item(key = "free-label") { SectionLabel("Free — ${state.free.size}") }
-            items(state.free, key = { "free-${it.room}" }) { status ->
-                FreeRoomRow(status = status, onClick = { onOpenRoom(status.room) })
+        } else {
+            if (state.free.isNotEmpty()) {
+                item(key = "free-label") { SectionLabel("Free: ${state.free.size}") }
+                items(state.free, key = { "free-${it.room}" }) { status ->
+                    FreeRoomRow(status = status, onClick = { onOpenRoom(status.room) })
+                }
+            } else if (!state.isFiltered) {
+                item(key = "all-busy") {
+                    Text(
+                        text = "Every room is in use this hour.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-        } else if (!state.isFiltered) {
-            item(key = "all-busy") {
-                Text(
-                    text = "Every room is in use this hour.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+
+            // Busy rooms are inside this branch on purpose: on a non-teaching day the
+            // weekly grid still holds that day-of-week's bookings, and rendering them
+            // under a "not a teaching day" line would say classes run on a day the
+            // calendar says they do not.
+            if (state.busy.isNotEmpty()) {
+                item(key = "busy-label") {
+                    SectionLabel("In use: ${state.busy.size}", Modifier.padding(top = 8.dp))
+                }
+                items(state.busy, key = { "busy-${it.room}" }) { status ->
+                    BusyRoomRow(
+                        status = status,
+                        subjects = state.subjects,
+                        onClick = { onOpenRoom(status.room) },
+                    )
+                }
             }
         }
 
-        if (state.busy.isNotEmpty()) {
-            item(key = "busy-label") {
-                SectionLabel("In use — ${state.busy.size}", Modifier.padding(top = 8.dp))
+        // The community section: what other students say about these rooms right now.
+        // Only on a view that *is* now — the right-now view in any form (a live slot, an
+        // after-hours hour, a holiday with an extra class running in it) or a picked slot
+        // that happens to be the live one. A report about "now" next to a Tuesday being
+        // browsed on a Thursday would be a lie sitting next to a true list. Unreachable
+        // Supabase never removes the section: the status row says which honest thing is
+        // true (stale data, or none) and offers the retry; the timetable above is
+        // untouched either way, because the community feature is a guest on this tab, not
+        // a tenant.
+        if ((state.isLive || state.isRightNow) && community.available) {
+            if (community.status != CommunityUiState.Status.FRESH) {
+                item(key = "community-status") {
+                    CommunityStatusRow(status = community.status, onRetry = onCommunityRetry)
+                }
             }
-            items(state.busy, key = { "busy-${it.room}" }) { status ->
-                BusyRoomRow(
-                    status = status,
-                    subjects = state.subjects,
-                    onClick = { onOpenRoom(status.room) },
-                )
+            if (community.roomSummaries.isNotEmpty()) {
+                item(key = "community-label") {
+                    SectionLabel(
+                        "Students report",
+                        Modifier.padding(top = 8.dp),
+                    )
+                }
+                items(community.roomSummaries, key = { "community-${it.room}" }) { summary ->
+                    RoomCommunityCard(
+                        summary = summary,
+                        serverNow = community.serverNow,
+                        own = community.hasOwnReport(summary),
+                        onClick = { onOpenRoom(summary.room) },
+                    )
+                }
             }
         }
     }

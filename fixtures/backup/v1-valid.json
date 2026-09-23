@@ -1,0 +1,91 @@
+{
+  "formatVersion": 1,
+  "app": {
+    "name": "Attendo",
+    "versionName": "1.1",
+    "versionCode": 2
+  },
+  "exportedAt": "2026-09-12T09:30:00Z",
+  "checksum": {
+    "algorithm": "SHA-256",
+    "value": "882a57eb47b5b4656bdcbbe706ac338ed32236c435262b5b5c16823c73d90a05"
+  },
+  "payload": {
+    "preferences": {
+      "overallTargetBasisPoints": 7500,
+      "courseTargetBasisPoints": 7500,
+      "section": "2nd Yr ECE-A",
+      "batch": "A1"
+    },
+    "calendar": {
+      "termStart": "2026-07-28",
+      "termEnd": "2026-12-15",
+      "holidays": [
+        "2026-10-02"
+      ],
+      "workingSaturdays": [
+        "2026-09-12"
+      ]
+    },
+    "courses": [
+      {
+        "ref": "c1",
+        "name": "Signals and Systems",
+        "code": "EC-301",
+        "targetBasisPoints": 8000,
+        "colorArgb": -12627531,
+        "archived": false
+      },
+      {
+        "ref": "c2",
+        "name": "Digital Electronics",
+        "code": "EC-204",
+        "targetBasisPoints": 7500,
+        "colorArgb": 0,
+        "archived": true
+      }
+    ],
+    "patterns": [
+      {
+        "ref": "p1",
+        "courseRef": "c1",
+        "dayOfWeek": "MONDAY",
+        "startHour": 9,
+        "units": 2,
+        "kind": "LECTURE",
+        "effectiveFrom": "2026-07-28",
+        "room": "204"
+      }
+    ],
+    "sessions": [
+      {
+        "ref": "s1",
+        "courseRef": "c1",
+        "date": "2026-07-28",
+        "startHour": 9,
+        "unitsPlanned": 2,
+        "attendedUnits": [
+          0,
+          1
+        ],
+        "status": "HELD",
+        "kind": "LECTURE",
+        "patternRef": "p1",
+        "room": "204",
+        "approvedAt": "2026-07-28T10:15:00Z"
+      },
+      {
+        "ref": "s2",
+        "courseRef": "c1",
+        "date": "2026-08-04",
+        "startHour": 9,
+        "unitsPlanned": 2,
+        "attendedUnits": [],
+        "status": "CANCELLED",
+        "kind": "LECTURE",
+        "patternRef": "p1",
+        "cancellationReason": "FACULTY_CANCELLED"
+      }
+    ]
+  }
+}

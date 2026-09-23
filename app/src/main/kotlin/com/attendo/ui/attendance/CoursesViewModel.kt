@@ -55,8 +55,15 @@ data class CoursesUiState(
 ) {
     val active: List<CourseStats> get() = current?.courses.orEmpty()
 
+    /**
+     * Whether the empty state is true, not merely visible. The initial state
+     * (`loaded = false`) has empty lists by construction — a student who already has
+     * courses saw that state's empty screen for the beat the Room flows took to emit,
+     * a flash of "Seed from timetable" that flipped to the real list. Not loaded is
+     * not empty; the screen shows a loading pane until it knows.
+     */
     val isEmpty: Boolean
-        get() = active.isEmpty() && archived.isEmpty()
+        get() = loaded && active.isEmpty() && archived.isEmpty()
 }
 
 /**

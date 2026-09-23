@@ -3,6 +3,8 @@ package com.attendo.data
 import android.content.Context
 import android.content.Intent
 import androidx.room.RoomDatabase
+import com.attendo.data.community.CommunityClient
+import com.attendo.data.community.CommunityIdentityStore
 import com.attendo.data.update.UpdateCheckStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,6 +30,7 @@ class AppReset(
     private val context: Context,
     private val database: () -> RoomDatabase,
     private val settings: SettingsStore,
+    private val communityIdentity: (suspend () -> Unit)? = null,
 ) {
 
     /**
@@ -46,6 +49,13 @@ class AppReset(
         // settings sitting on top of a semester. Room's own API empties every table and
         // keeps the file consistent with itself.
         database().clearAllTables()
+
+        // The community reporter's anonymous identity dies with the reset too — signing
+        // the session out server-side *before* the local file is wiped, so the revocation
+        // and the wipe land together or the wipe alone (best effort: unreachable Supabase
+        // must not abort the reset, and a signed-out token file is worthless anyway).
+        // The identity prefs file itself is cleared below, with the others.
+        communityIdentity?.invoke()
 
         // Preferences, by the same process-wide instances the stores hold — Android caches
         // SharedPreferences per file per process, so this is a clear the live stores see.
@@ -87,18 +97,36 @@ class AppReset(
         /**
          * Every preferences file holding student data. `attendo-settings` is the term, the
          * targets, the section, the name; `updates` is the update system's memory of its
-         * last check and the release the student declined.
+         * last check and the release the student declined; `attendo-community` is the
+         * anonymous community identity — and, since Phase 2, the account session, which
+         * is the same session in the same file (linking attached a GitHub identity to it;
+         * it never made a second one). A reset ends it for good: a reset that kept it
+         * would leave one reporter — or one signed-in account — alive on a phone with no
+         * recollection of reporting.
          */
         val clearedPreferenceFiles: List<String> = listOf(
             SettingsStore.FILE_NAME,
             UpdateCheckStore.FILE_NAME,
+            CommunityIdentityStore.FILE_NAME,
         )
 
         /**
          * Every directory under `filesDir` the app writes. `backup` holds the undo copy of
          * the data an import replaced; `updates` holds a downloaded APK on its way to the
-         * installer.
+         * installer; `quarantine` holds the copy of a deleted account's attendance kept
+         * when the phone was claimed by the account that signed in next
+         * ([AttendanceQuarantineStore]).
+         *
+         * The quarantine directory is listed here for the same reason the other two are:
+         * a clear-all must not leave a copy of a term's attendance behind on a phone its
+         * owner has asked to be emptied. It is also why nothing has to delete that file
+         * anywhere else — the set-aside copy is meant to outlive the account that owned it,
+         * and only this path is meant to outlive it.
          */
-        val clearedDirectories: List<String> = listOf("backup", "updates")
+        val clearedDirectories: List<String> = listOf(
+            "backup",
+            "updates",
+            AttendanceQuarantineStore.DIRECTORY_NAME,
+        )
     }
 }

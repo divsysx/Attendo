@@ -61,6 +61,21 @@ value class Percent private constructor(val basisPoints: Int) : Comparable<Perce
         }
 
         /**
+         * A whole percentage the student typed, or null when it is not one they may set.
+         *
+         * This is the gate the target pickers go through. It is deliberately total and
+         * deliberately returns null rather than clamping: "150" is a typo, and turning it
+         * into 100% silently would leave the field showing a number the target does not
+         * have. Every value from 0 to 100 is valid, including both ends — a student may
+         * genuinely want a target of 0 ("I only care that classes happened") or 100.
+         */
+        fun ofWholePercent(percent: Int): Percent? =
+            if (percent in 0..MAX_WHOLE_PERCENT) Percent(percent * BP_PER_PERCENT) else null
+
+        /** The highest whole percentage a target may be set to. */
+        const val MAX_WHOLE_PERCENT: Int = 100
+
+        /**
          * Rounds [numerator]/[denominator] to the nearest basis point, or returns
          * null when nothing has been held yet — an undefined percentage is a real
          * state ("no classes yet") and must not silently become 0%.

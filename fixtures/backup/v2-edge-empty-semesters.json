@@ -1,0 +1,38 @@
+{
+  "formatVersion": 2,
+  "app": {
+    "name": "Attendo",
+    "versionName": "1.1",
+    "versionCode": 2
+  },
+  "exportedAt": "2026-09-12T09:30:00Z",
+  "checksum": {
+    "algorithm": "SHA-256",
+    "value": "f3ee3b6fc12eab3d470a45db7e5c18b194e49db04591f7b3046323d5a7101eab"
+  },
+  "payload": {
+    "preferences": {
+      "overallTargetBasisPoints": 7500,
+      "courseTargetBasisPoints": 7500
+    },
+    "calendar": {
+      "termStart": "2026-07-28",
+      "termEnd": "2026-12-15",
+      "holidays": [],
+      "workingSaturdays": []
+    },
+    "semesters": [],
+    "courses": [
+      {
+        "ref": "c1",
+        "name": "Signals and Systems",
+        "code": "EC-301",
+        "targetBasisPoints": 7500,
+        "colorArgb": 0,
+        "archived": false
+      }
+    ],
+    "patterns": [],
+    "sessions": []
+  }
+}

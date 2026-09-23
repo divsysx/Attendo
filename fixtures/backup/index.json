@@ -1,0 +1,161 @@
+{
+  "suite": "attendo-backup-golden-fixtures",
+  "spec": "docs/backup-format.md",
+  "fixtures": [
+    {
+      "file": "v1-valid.json",
+      "expect": "accept",
+      "originalFormatVersion": 1,
+      "summary": {
+        "courses": 2,
+        "patterns": 1,
+        "sessions": 2,
+        "semesters": 1,
+        "coursesWithSemester": 1,
+        "unitsHeld": 2,
+        "unitsAttended": 2
+      }
+    },
+    {
+      "file": "v2-valid.json",
+      "expect": "accept",
+      "originalFormatVersion": 2,
+      "summary": {
+        "courses": 2,
+        "patterns": 3,
+        "sessions": 7,
+        "semesters": 2,
+        "coursesWithSemester": 2,
+        "unitsHeld": 7,
+        "unitsAttended": 4
+      }
+    },
+    {
+      "file": "v2-edge-dangling-pattern-ref.json",
+      "expect": "accept",
+      "originalFormatVersion": 2,
+      "summary": {
+        "courses": 1,
+        "patterns": 0,
+        "sessions": 1,
+        "semesters": 1,
+        "coursesWithSemester": 1,
+        "unitsHeld": 2,
+        "unitsAttended": 2
+      }
+    },
+    {
+      "file": "v2-edge-unlinked-rescheduled.json",
+      "expect": "accept",
+      "originalFormatVersion": 2,
+      "summary": {
+        "courses": 1,
+        "patterns": 1,
+        "sessions": 1,
+        "semesters": 1,
+        "coursesWithSemester": 1,
+        "unitsHeld": 0,
+        "unitsAttended": 0
+      }
+    },
+    {
+      "file": "v2-edge-archived-course-no-semester.json",
+      "expect": "accept",
+      "originalFormatVersion": 2,
+      "summary": {
+        "courses": 1,
+        "patterns": 0,
+        "sessions": 0,
+        "semesters": 1,
+        "coursesWithSemester": 0,
+        "unitsHeld": 0,
+        "unitsAttended": 0
+      }
+    },
+    {
+      "file": "v2-edge-personal-basis-no-date.json",
+      "expect": "accept",
+      "originalFormatVersion": 2,
+      "summary": {
+        "courses": 1,
+        "patterns": 1,
+        "sessions": 1,
+        "semesters": 1,
+        "coursesWithSemester": 1,
+        "unitsHeld": 2,
+        "unitsAttended": 2
+      }
+    },
+    {
+      "file": "v2-edge-empty-semesters.json",
+      "expect": "accept",
+      "originalFormatVersion": 2,
+      "summary": {
+        "courses": 1,
+        "patterns": 0,
+        "sessions": 0,
+        "semesters": 0,
+        "coursesWithSemester": 0,
+        "unitsHeld": 0,
+        "unitsAttended": 0
+      }
+    },
+    {
+      "file": "reject-not-json.json",
+      "expect": "reject",
+      "rejection": "notJson"
+    },
+    {
+      "file": "reject-not-a-backup.json",
+      "expect": "reject",
+      "rejection": "notABackup"
+    },
+    {
+      "file": "reject-future-version.json",
+      "expect": "reject",
+      "rejection": "unsupportedFormatVersion",
+      "direction": "future"
+    },
+    {
+      "file": "reject-retired-version.json",
+      "expect": "reject",
+      "rejection": "unsupportedFormatVersion",
+      "direction": "retired"
+    },
+    {
+      "file": "reject-unknown-checksum-algorithm.json",
+      "expect": "reject",
+      "rejection": "unknownChecksumAlgorithm"
+    },
+    {
+      "file": "reject-checksum-mismatch.json",
+      "expect": "reject",
+      "rejection": "checksumMismatch"
+    },
+    {
+      "file": "reject-malformed-field.json",
+      "expect": "reject",
+      "rejection": "malformedField"
+    },
+    {
+      "file": "reject-dangling-reference.json",
+      "expect": "reject",
+      "rejection": "danglingReference"
+    },
+    {
+      "file": "reject-duplicate-reference.json",
+      "expect": "reject",
+      "rejection": "duplicateReference"
+    },
+    {
+      "file": "reject-invalid-value.json",
+      "expect": "reject",
+      "rejection": "invalidValue"
+    },
+    {
+      "file": "reject-broken-reschedule.json",
+      "expect": "reject",
+      "rejection": "brokenReschedule"
+    }
+  ]
+}

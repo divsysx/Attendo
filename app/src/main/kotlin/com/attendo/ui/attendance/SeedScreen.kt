@@ -171,7 +171,7 @@ private fun SeedContent(
                     // a scheme the choice said nothing about, so the student has to look.
                     note = proposal.batches
                         .takeIf { state.batch != null && proposal.needsBatchCheck }
-                        ?.let { "Split ${it.joinToString(" / ")} — check which one is yours" },
+                        ?.let { "Split ${it.joinToString(" / ")}. Check which one is yours" },
                     onToggle = { onToggle(proposal.course.code) },
                 )
             }
@@ -183,7 +183,7 @@ private fun SeedContent(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = "The grid puts ${state.section} in two places at these hours. " +
-                                "Usually that means you still have a batch to pick — the classes " +
+                                "Usually that means you still have a batch to pick. The classes " +
                                 "are created either way, and the ones you do not attend can be " +
                                 "cancelled or the course archived.",
                             style = MaterialTheme.typography.bodySmall,

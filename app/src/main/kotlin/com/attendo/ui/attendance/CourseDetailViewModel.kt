@@ -179,7 +179,7 @@ class CourseDetailViewModel(
         today: LocalDate,
         termEnd: LocalDate,
     ): Int {
-        val calendar = settings.current.calendar
+        val calendar = settings.current.effectiveCalendar
         var date = today.plusDays(1)
         var units = 0
         while (!date.isAfter(termEnd)) {

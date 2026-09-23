@@ -1,0 +1,29 @@
+{
+  "formatVersion": 3,
+  "app": {
+    "name": "Attendo",
+    "versionName": "9.9",
+    "versionCode": 99
+  },
+  "exportedAt": "2026-09-12T09:30:00Z",
+  "checksum": {
+    "algorithm": "SHA-256",
+    "value": "6e4e9b139e6c455fac5c78a4fa3a8597ce99828ead36376961876aa381180ae4"
+  },
+  "payload": {
+    "preferences": {
+      "overallTargetBasisPoints": 7500,
+      "courseTargetBasisPoints": 7500
+    },
+    "calendar": {
+      "termStart": "2026-07-28",
+      "termEnd": "2026-12-15",
+      "holidays": [],
+      "workingSaturdays": []
+    },
+    "semesters": [],
+    "courses": [],
+    "patterns": [],
+    "sessions": []
+  }
+}

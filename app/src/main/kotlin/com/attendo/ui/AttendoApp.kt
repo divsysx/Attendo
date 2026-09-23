@@ -1,6 +1,9 @@
 package com.attendo.ui
 
 import android.net.Uri
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -31,11 +34,20 @@ import com.attendo.ui.attendance.CoursesScreen
 import com.attendo.ui.attendance.DashboardScreen
 import com.attendo.ui.attendance.DayReviewScreen
 import com.attendo.ui.attendance.SeedScreen
+import com.attendo.ui.community.CommunityViewModel
+import com.attendo.ui.community.MyCommunityScreen
 import com.attendo.ui.rooms.RoomDetailScreen
 import com.attendo.ui.rooms.RoomsScreen
 import com.attendo.ui.rooms.RoomsViewModel
+import com.attendo.ui.settings.AccountSettingsScreen
+import com.attendo.ui.settings.AttendanceTargetsScreen
 import com.attendo.ui.settings.BackupScreen
+import com.attendo.ui.settings.HolidaysScreen
+import com.attendo.ui.settings.RemovedAccountNotice
+import com.attendo.ui.settings.RemovedAccountNoticeViewModel
+import com.attendo.ui.settings.ReportingIdentityScreen
 import com.attendo.ui.settings.SettingsScreen
+import com.attendo.ui.settings.WorkingSaturdaysScreen
 import com.attendo.ui.rollover.RolloverGate
 import com.attendo.ui.rollover.RolloverViewModel
 import java.time.LocalDate
@@ -60,11 +72,22 @@ fun AttendoApp() {
     // and the availability flow re-collected. Kept here, the instance (and its collected state)
     // survives the pop, and the tab reads as already loaded.
     val roomsViewModel: RoomsViewModel = viewModel(factory = RoomsViewModel.Factory)
+    // Hoisted at the top level for the same reason roomsViewModel is: one community
+    // state and one Realtime channel shared by every community surface, alive across
+    // all navigation. It mints nothing on its own — the first community screen's
+    // onShown() starts the engine, preserving D1-A (identity on first community view,
+    // never on app open).
+    val communityViewModel: CommunityViewModel = viewModel(factory = CommunityViewModel.Factory)
     // Hoisted at the top level for the same reason roomsViewModel is: the gate must survive the
     // back-stack changes underneath it, and its detection flow must keep running regardless of
     // which destination is current. A gate that lived in a destination's composition would be torn
     // down on every navigation, re-running detection and flickering the overlay.
     val rolloverViewModel: RolloverViewModel = viewModel(factory = RolloverViewModel.Factory)
+    // Hoisted here for the same reason, and for one more: the deletion is established by a
+    // background validation with no screen open, so the sentence about it has to belong to
+    // the app rather than to a destination. See RemovedAccountNotice.
+    val removedAccountNoticeViewModel: RemovedAccountNoticeViewModel =
+        viewModel(factory = RemovedAccountNoticeViewModel.Factory)
 
     // The gate overlays the whole nav graph in a Box so it can cover the Scaffold when a rollover
     // is required, without becoming a route of its own. Rendering nothing while Idle keeps the
@@ -86,6 +109,15 @@ fun AttendoApp() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(insets),
+            // Navigation Compose's stock transition is a 700 ms crossfade — long enough
+            // that both screens compose together for most of a second on a cold
+            // destination, which reads as a stall. A 180 ms fade hands over in about ten
+            // frames: still a visible transition, but the incoming screen is on its own
+            // quickly enough to stay smooth.
+            enterTransition = { fadeIn(tween(180)) },
+            exitTransition = { fadeOut(tween(180)) },
+            popEnterTransition = { fadeIn(tween(180)) },
+            popExitTransition = { fadeOut(tween(180)) },
         ) {
             composable(Routes.DASHBOARD) {
                 DashboardScreen(
@@ -155,17 +187,52 @@ fun AttendoApp() {
                     onBack = navController::popBackStack,
                     onSeed = { navController.navigate(Routes.SEED) },
                     onOpenBackup = { navController.navigate(Routes.BACKUP) },
+                    onOpenAccount = { navController.navigate(Routes.ACCOUNT) },
+                    onOpenMyCommunity = { navController.navigate(Routes.MY_COMMUNITY) },
+                    onOpenReportingIdentity = { navController.navigate(Routes.REPORTING_IDENTITY) },
+                    onOpenTargets = { navController.navigate(Routes.TARGETS) },
+                    onOpenHolidays = { navController.navigate(Routes.HOLIDAYS) },
+                    onOpenWorkingSaturdays = { navController.navigate(Routes.WORKING_SATURDAYS) },
                 )
+            }
+
+            composable(Routes.TARGETS) {
+                AttendanceTargetsScreen(onBack = navController::popBackStack)
+            }
+
+            composable(Routes.HOLIDAYS) {
+                HolidaysScreen(onBack = navController::popBackStack)
+            }
+
+            composable(Routes.WORKING_SATURDAYS) {
+                WorkingSaturdaysScreen(onBack = navController::popBackStack)
             }
 
             composable(Routes.BACKUP) {
                 BackupScreen(onBack = navController::popBackStack)
             }
 
+            composable(Routes.ACCOUNT) {
+                AccountSettingsScreen(onBack = navController::popBackStack)
+            }
+
+            composable(Routes.REPORTING_IDENTITY) {
+                ReportingIdentityScreen(onBack = navController::popBackStack)
+            }
+
+            composable(Routes.MY_COMMUNITY) {
+                MyCommunityScreen(
+                    onBack = navController::popBackStack,
+                    communityViewModel = communityViewModel,
+                )
+            }
+
             composable(Routes.ROOMS) {
                 RoomsScreen(
                     onOpenRoom = { room -> navController.navigate(Routes.room(room)) },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                     viewModel = roomsViewModel,
+                    communityViewModel = communityViewModel,
                 )
             }
 
@@ -176,6 +243,7 @@ fun AttendoApp() {
                 RoomDetailScreen(
                     room = entry.room(),
                     onBack = navController::popBackStack,
+                    communityViewModel = communityViewModel,
                 )
             }
         }
@@ -183,6 +251,10 @@ fun AttendoApp() {
         // Overlays the nav graph when a rollover is required. Rendered after the Scaffold so it
         // sits on top, and only composes content while the state is not Idle.
         RolloverGate(viewModel = rolloverViewModel)
+        // And the same way, for the one sentence that is about the install rather than about a
+        // screen: the account was removed by somebody else, so the student was signed out and
+        // told nothing. Composes nothing unless that is true and unacknowledged.
+        RemovedAccountNotice(viewModel = removedAccountNoticeViewModel)
     }
 }
 

@@ -1,11 +1,15 @@
 package com.attendo.ui.settings
 
 import com.attendo.core.backup.BackupCodec
+import com.attendo.core.model.AcademicCalendar
+import com.attendo.core.model.Percent
 import com.attendo.data.AppSettings
 import com.attendo.data.AppVersion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 /**
  * The three labels the Settings screen derives, all of which are about naming.
@@ -107,5 +111,116 @@ class SettingsUiStateTest {
             val state = SettingsUiState(settings = AppSettings(displayName = stored))
             assertEquals("stored=${stored?.let { "\"$it\"" }}", "", state.nameFieldValue)
         }
+    }
+
+    // ---- the three rows that open their own screens --------------------------
+
+    // Settings lists what the app can be asked to do and no longer edits any of it inline, so
+    // each of these three rows is a summary and a way in. The summaries are all a count or a
+    // percentage, which means the screen can be read at a glance — and means a row that lied
+    // about the count would send a student to a screen that disagreed with it.
+
+    @Test
+    fun `the holidays row counts what is configured`() {
+        val state = SettingsUiState(
+            settings = AppSettings(
+                calendar = TERM.copy(
+                    holidays = setOf(
+                        LocalDate.of(2026, 8, 15),
+                        LocalDate.of(2026, 10, 2),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals("2 configured", state.holidaysSummary)
+    }
+
+    @Test
+    fun `a count of none says None rather than zero`() {
+        // "0 configured" reads as a fault. There is nothing wrong with a term with no holidays
+        // in it yet, and the row should not imply otherwise.
+        assertEquals("None", SettingsUiState().holidaysSummary)
+        assertEquals("None", SettingsUiState().workingSaturdaysSummary)
+    }
+
+    @Test
+    fun `a count of one is singular`() {
+        val state = SettingsUiState(
+            settings = AppSettings(
+                calendar = TERM.copy(workingSaturdays = setOf(LocalDate.of(2026, 8, 1))),
+            ),
+        )
+
+        assertEquals("1 configured", state.workingSaturdaysSummary)
+    }
+
+    @Test
+    fun `the targets row shows the default for new courses, not the overall threshold`() {
+        // The two are separate settings, and this row belongs to the one that decides what a
+        // new course starts at. Showing the overall target here would describe a number the
+        // screen behind it does not let you change.
+        val state = SettingsUiState(
+            settings = AppSettings(
+                overallTarget = Percent.ofPercent(60.0),
+                courseTarget = Percent.ofPercent(85.0),
+            ),
+        )
+
+        assertEquals("Default: 85%", state.targetsSummary)
+    }
+
+    @Test
+    fun `the targets row renders a fractional default as itself`() {
+        // Nothing may round a stored target to make a summary read more tidily.
+        val state = SettingsUiState(
+            settings = AppSettings(courseTarget = Percent.ofPercent(72.5)),
+        )
+
+        assertEquals("Default: 73%", state.targetsSummary)
+        assertEquals(7250, state.settings.courseTarget.basisPoints)
+    }
+
+    // ---- the Working Saturdays row -------------------------------------------
+
+    @Test
+    fun `a section taught on Saturday every week is not offered the setting`() {
+        val state = SettingsUiState(
+            settings = AppSettings(calendar = TERM, section = "1st Yr CSE-B"),
+        )
+
+        assertTrue(state.saturdayIsRecurring)
+    }
+
+    @Test
+    fun `every other section keeps the setting`() {
+        val sections = listOf("3rd Yr ECE-A", "2nd Yr EE-B", "4th Yr CSE-A", null)
+
+        sections.forEach { section ->
+            val state = SettingsUiState(settings = AppSettings(calendar = TERM, section = section))
+            assertFalse("section=$section", state.saturdayIsRecurring)
+        }
+    }
+
+    @Test
+    fun `the row's summary reflects what is stored, whatever the section`() {
+        // The state does not adjust the count for a recurring section; the screen hides the
+        // whole row instead. Deriving it here as well would be a second place to keep in step.
+        val state = SettingsUiState(
+            settings = AppSettings(
+                calendar = TERM.copy(workingSaturdays = setOf(LocalDate.of(2026, 8, 1))),
+                section = "1st Yr CSE-A",
+            ),
+        )
+
+        assertEquals("1 configured", state.workingSaturdaysSummary)
+    }
+
+    private companion object {
+        /** A term whose ends fall on ordinary weekdays, so the Saturdays are unambiguous. */
+        val TERM = AcademicCalendar(
+            termStart = LocalDate.of(2026, 7, 28),
+            termEnd = LocalDate.of(2026, 11, 20),
+        )
     }
 }

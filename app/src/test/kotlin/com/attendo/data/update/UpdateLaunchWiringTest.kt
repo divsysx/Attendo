@@ -20,7 +20,7 @@ import java.io.File
 class UpdateLaunchWiringTest {
 
     private fun source(relative: String): File =
-        generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
+        generateSequence(File(System.getProperty("user.dir") ?: ".")) { it.parentFile }
             .map { File(it, relative) }
             .first(File::exists)
 

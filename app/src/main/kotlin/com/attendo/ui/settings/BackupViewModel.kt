@@ -28,9 +28,9 @@ import java.time.LocalDate
 /**
  * Something to tell the student once an operation has finished.
  *
- * [hint] is the second line — what to do next, when there is something to do. There is no field
- * for the individual reasons a file was refused: they name parser offsets and field paths, and
- * they are of no use to a student choosing the wrong file. See [BackupMessages].
+ * [hint] is the second line — what to do next, when there is something to do. A refused file
+ * carries its plain reason here; the individual technical reasons behind it name parser
+ * offsets and field paths, and stay with the log. See [BackupMessages].
  */
 data class BackupNotice(
     val message: String,
@@ -189,9 +189,10 @@ class BackupViewModel(
      *
      * Writes nothing. A file that fails here never gets near the database.
      *
-     * Both failure paths say the same short thing, because from where the student is standing
-     * there is one situation — the file they picked is not the one they wanted — and one thing
-     * to do about it. The detailed reasons a parser gives are of no use to them.
+     * Each refusal says which family of thing went wrong, in one short line — the wrong file
+     * says so, a damaged backup says so, a backup from a newer build says so and points at
+     * updating. What never reaches the student is the parser's vocabulary; see
+     * [BackupMessages] for where those words go instead.
      */
     fun preview(source: Uri) {
         if (_state.value.busy) return
@@ -222,9 +223,10 @@ class BackupViewModel(
                 }
 
                 is BackupReadResult.Failed -> {
-                    // The student sees only the short message: "unexpected JSON token at offset 3"
-                    // is exactly what someone debugging a corrupted export needs, and exactly what
-                    // nobody choosing the wrong file does.
+                    // The student sees the plain reason: which family of fault the file has,
+                    // and what to do about it. "Unexpected JSON token at offset 3" is exactly
+                    // what someone debugging a corrupted export needs, and exactly what nobody
+                    // choosing the wrong file does, so it stays with the log.
                     _state.update {
                         it.copy(
                             task = null,
@@ -279,7 +281,7 @@ class BackupViewModel(
                 // the same rule FutureReviewTest pins for the seeded path. The settings were
                 // replaced inside write() before this branch runs, so this calendar is the
                 // restored one.
-                attendance.syncSessions(settings.current.calendar, clock())
+                attendance.syncSessions(settings.current.effectiveCalendar, clock())
                 val summary = result.summary
                 BackupNotice(
                     message = if (restored) {

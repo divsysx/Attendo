@@ -120,11 +120,15 @@ data class SeedPlan(
  *
  * ### Subject tags
  *
- * A trailing `-A` or `-B` is the lecture group its section sits in: `PSCS-A` and `PSCS-B`
- * are one subject taught in two halls, and `subjects.csv` keys only `PSCS`. A section is
- * assigned to exactly one group, so within one page the tag says nothing and [baseCode]
- * drops it — otherwise a student whose lectures read `PSCS-B` and whose lab reads `PSCS`
- * gets two unrelated courses for one subject.
+ * A trailing `-A` or `-B` is usually the lecture group its section sits in: `PSCS-A` and
+ * `PSCS-B` are one subject taught in two halls, and `subjects.csv` keys only `PSCS`. A
+ * section is assigned to exactly one group, so within one page the tag says nothing and
+ * [baseCode] drops it — otherwise a student whose lectures read `PSCS-B` and whose lab
+ * reads `PSCS` gets two unrelated courses for one subject.
+ *
+ * Usually, not always. `ECA-A` and `ECA-B` are separate courses that happen to be spelled
+ * the way a group tag is spelled, so [baseCode] asks the key first and only drops the tag
+ * when the code it would drop it onto is a subject in its own right.
  *
  * A trailing `-T` is dropped from the code the same way, but unlike a group tag it is not
  * noise: it is what marks the row a tutorial, and it wins over a kind column that says
@@ -151,13 +155,30 @@ object SectionSeeder {
      * Only a trailing `-A`, `-B` or `-T` goes: nothing in the subject key ends those ways,
      * while `DE-1`, `EVS-2`, `EM-I` and `AEW-I` are whole subject codes whose suffix is part
      * of the name.
+     *
+     * A code [subjects] lists is already the subject, and is handed back untouched — which is
+     * what keeps `ECA-A` and `ECA-B` two courses rather than one `ECA` taught twice. The key
+     * is the only thing that can tell the two apart: identical in shape, `DIP-A` folds onto
+     * `DIP` (a practical split between two groups of one course) while `ECA-A` does not,
+     * because the timetable prints no bare `ECA` for it to fold onto.
      */
-    fun baseCode(subject: String): String =
-        subject.replace(TAG, "").takeIf { it.isNotBlank() } ?: subject
+    fun baseCode(subject: String, subjects: Glossary = Glossary.EMPTY): String =
+        subject.takeIf { subjects.exactNameOf(it) != null }
+            ?: subject.replace(TAG, "").takeIf { it.isNotBlank() }
+            ?: subject
 
     /**
      * Builds a plan for [section]. [termStart] becomes each pattern's `effectiveFrom`,
      * so a mid-semester re-seed does not claim to describe weeks already recorded.
+     *
+     * [startFor] is for the one case a single term start cannot describe. The grid bundles an
+     * edition that was reissued mid-term, so some of what a page prints was not taught under the
+     * earlier one — a subject that appears for the first time in September has no July to be
+     * dated from, and a pattern given one would generate six weeks of classes that never
+     * happened. The caller that knows which edition the file is says so here, per course code;
+     * by default every course is dated from [termStart], which is what the overwhelming majority
+     * of them want. The rule itself belongs to the edition and lives in
+     * [TimetableMigration.effectiveFromFor], not here — this screen is a seeder, not a calendar.
      */
     fun plan(
         bookings: Iterable<RoomBooking>,
@@ -166,17 +187,27 @@ object SectionSeeder {
         batch: String? = null,
         subjects: Glossary = Glossary.EMPTY,
         defaultTarget: Percent = Percent.DEFAULT_TARGET,
+        startFor: (courseCode: String) -> LocalDate = { termStart },
     ): SeedPlan {
         val mine = RoomAvailability.forSection(bookings, section)
-        val bySubject = mine.groupBy { baseCode(it.subject) }
+        val bySubject = mine.groupBy { baseCode(it.subject, subjects) }
         val ownScheme = ownScheme(bySubject)
         val kept = bySubject.values.flatMap { rows -> attendedBy(rows, batch, ownScheme) }
 
         val proposals = kept
-            .groupBy { baseCode(it.subject) to partOf(it) }
+            .groupBy { baseCode(it.subject, subjects) to partOf(it) }
             .map { (key, rows) ->
                 val (code, part) = key
-                proposalFor(code, part, rows, subjects, defaultTarget, termStart)
+                // The suffix is part of the course code, so the caller's rule sees exactly the
+                // code the proposal will carry: `MLDL`, `MLDL Lab`, `MLDL Tutorial`.
+                proposalFor(
+                    code = code,
+                    part = part,
+                    rows = rows,
+                    subjects = subjects,
+                    defaultTarget = defaultTarget,
+                    effectiveFrom = startFor(code + part.suffix),
+                )
             }
             .filter { it.patterns.isNotEmpty() }
             .sortedBy { it.course.code }
@@ -185,14 +216,21 @@ object SectionSeeder {
             section = section,
             batch = batch,
             proposals = proposals,
-            clashes = clashesIn(kept),
+            clashes = clashesIn(kept, subjects),
             batchOptions = ownScheme,
         )
     }
 
     /** The batch labels [section] is split by, for the picker shown before [plan]. */
-    fun batchesFor(bookings: Iterable<RoomBooking>, section: String): List<String> =
-        ownScheme(bookings.filter { it.section == section }.groupBy { baseCode(it.subject) })
+    fun batchesFor(
+        bookings: Iterable<RoomBooking>,
+        section: String,
+        subjects: Glossary = Glossary.EMPTY,
+    ): List<String> =
+        ownScheme(
+            bookings.filter { it.section == section }
+                .groupBy { baseCode(it.subject, subjects) },
+        )
 
     /**
      * The batch scheme the section is its own — the labels the student should be asked to
@@ -259,7 +297,7 @@ object SectionSeeder {
         rows: List<RoomBooking>,
         subjects: Glossary,
         defaultTarget: Percent,
-        termStart: LocalDate,
+        effectiveFrom: LocalDate,
     ): SeedProposal {
         val course = Course(
             name = subjects.nameOf(code) + part.suffix,
@@ -280,7 +318,7 @@ object SectionSeeder {
                     units = booking.units,
                     kind = part.kindOf(booking),
                     room = booking.room,
-                    effectiveFrom = termStart,
+                    effectiveFrom = effectiveFrom,
                 )
             }
         return SeedProposal(
@@ -325,11 +363,14 @@ object SectionSeeder {
      * Compared on [baseCode], so one subject's two lecture groups in one hour read as the
      * single class they are rather than as a conflict to resolve.
      */
-    private fun clashesIn(bookings: List<RoomBooking>): List<SeedClash> =
+    private fun clashesIn(
+        bookings: List<RoomBooking>,
+        subjects: Glossary,
+    ): List<SeedClash> =
         bookings
             .flatMap { booking -> booking.occupiedHours.map { hour -> (booking.dayOfWeek to hour) to booking } }
             .groupBy({ it.first }, { it.second })
-            .filterValues { rows -> rows.distinctBy { baseCode(it.subject) }.size > 1 }
+            .filterValues { rows -> rows.distinctBy { baseCode(it.subject, subjects) }.size > 1 }
             .map { (slot, rows) ->
                 SeedClash(
                     dayOfWeek = slot.first,

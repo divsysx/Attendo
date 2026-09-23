@@ -1,7 +1,15 @@
 # Subject acronyms — Faculty of Technology, University of Delhi (2026-27)
 # code,name
-# Taken from the "Subject Acronyms" page of Timetable.pdf. The grid only ever prints
-# the code, so this is what turns "ADEC" into something readable on screen.
+# Taken from the acronym keys printed on the timetable pages. The grid only ever
+# prints the code, so this is what turns "ADEC" into something readable on screen.
+#
+# DE and DE-1 are different courses and are not merged. ECA-A and ECA-B are separate
+# courses from ECA; the printed timetable gives no expansion for them, so they are
+# listed under their own codes rather than guessed at.
+#
+# A code ending -A or -B that is not listed here folds onto its base (DIP-A -> DIP):
+# the printed grid splits a practical between two groups of the same course. Listing
+# ECA-A and ECA-B is what stops them folding, because they are not that.
 code,name
 ACS,Analog Communication Systems
 ADA,Analysis and Design of Algorithms
@@ -15,19 +23,24 @@ CPS,Cyber Physical Systems
 CS,Control System
 CTRLS,Control Systems Engineering
 CW,Computer Workshop
+DADV,Data Analytics and Data Visualization
 DASIC,Digital ASIC Design: RTL to GDS-II
 DBMS,Database and Management Systems
+DE,Digital Empowerment
 DE-1,Digital Electronics-I
 DIP,Digital Image Processing
 DMW,Data Mining and Warehousing
 DSD,Digital System Design
 DSP,Digital Signal Processing
 ECA,Energy Conservation and Audit
+ECA-A,ECA-A
+ECA-B,ECA-B
 ECFC,Electro-Chemistry of Fuel Cells
 ECW,Electronics Workshop
 ED,Electrical Drives
 EDC,Electronic Devices and Circuits
 EDGE,Edge Computing
+EF-1,English Fluency - I
 EH,Ethical Hacking and Advanced Cybersecurity
 EM-I,Electrical Machines I
 EMFT,Electromagnetic Field Theory
@@ -35,6 +48,9 @@ ENA,Electrical Network Analysis
 EVS-2,Environmental Science: Theory into Practice-II
 EW,Electrical Workshop
 FCP,Fundamentals of Computer Programming
+FIT INDIA,Fit India
+FL,Financial Literacy
+FMB,Financial Management for Beginners
 FOA,Fundamentals of Algorithms
 FSS,Fundamentals of Signal and Systems
 HBT,हिंदी भाषा एवं तकनीक
@@ -43,6 +59,7 @@ IEHV,Introduction to Electric and Hybrid Vehicles
 M-1,Mathematics 1
 MEV,Modeling and Simulation of EHV
 MIC,Microwave Integrated Circuits
+MLDL,ML and DL for 3D Data
 NAS,Network Analysis and Synthesis
 NBD,Net Zero Building Design
 NN,Neural Networks

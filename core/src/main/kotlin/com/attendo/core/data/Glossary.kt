@@ -38,6 +38,17 @@ data class Glossary(val entries: Map<String, String>) {
     fun nameOf(code: String?): String = this[code] ?: code?.trim().orEmpty()
 
     /**
+     * The name listed for exactly this code, with no fallback to the part before its last
+     * hyphen.
+     *
+     * [get]'s fallback is right for a screen — either spelling of a split elective should
+     * print a name — and wrong for asking whether a code is a subject in its own right,
+     * where the whole question is whether the key names it or its base.
+     */
+    fun exactNameOf(code: String?): String? =
+        code?.trim()?.uppercase()?.takeIf { it.isNotEmpty() }?.let { entries[it] }
+
+    /**
      * Resolves a faculty cell, which may name two teachers: `[AKT / SG]`, `[AKT/SG]`.
      * Codes are returned resolved and in the order printed.
      */

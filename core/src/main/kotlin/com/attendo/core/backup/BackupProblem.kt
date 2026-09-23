@@ -16,7 +16,10 @@ package com.attendo.core.backup
  */
 sealed interface BackupProblem {
 
-    /** Precise, and technical where being precise requires it. Written for a log. */
+    /**
+     * Precise, and technical where being precise requires it. Written for a log. The words a
+     * student is shown are plainer and stop at the fault family — see [BackupMessages].
+     */
     val message: String
 
     /** The file could not be parsed as JSON at all — wrong file, or truncated mid-write. */
@@ -124,14 +127,14 @@ sealed interface BackupReadResult {
         val message: String get() = problems.first().message
 
         /**
-         * What the student is shown — the same sentence however the file failed.
-         *
-         * A total mapping, on purpose: see [BackupMessages].
+         * What the student is shown: the first reason in plain words, naming the fault family
+         * and nothing only a parser would know. The first, because the reader finds the
+         * earliest fault first — see [BackupMessages].
          */
-        val userMessage: String get() = BackupMessages.NOT_A_BACKUP
+        val userMessage: String get() = BackupMessages.message(problems.first())
 
         /** The line under [userMessage], saying what to do instead. */
-        val userHint: String get() = BackupMessages.CHOOSE_A_BACKUP
+        val userHint: String get() = BackupMessages.hint(problems.first())
 
         /** Every reason, joined, for the log line that accompanies the refusal. */
         val diagnostics: String get() = BackupMessages.diagnostics(problems)

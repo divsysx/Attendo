@@ -4,6 +4,7 @@ import com.attendo.data.AndroidBackupStore
 import com.attendo.data.AppearanceStore
 import com.attendo.data.AppReset
 import com.attendo.data.SettingsStore
+import com.attendo.data.community.CommunityIdentityStore
 import com.attendo.data.update.UpdateCheckStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,14 +27,34 @@ import java.io.File
 class AppResetContractTest {
 
     @Test
-    fun `the reset clears exactly the two preference files the app writes`() {
+    fun `the reset clears exactly the preference files the app writes`() {
         assertEquals(
-            "Student data and update-system memory, and nothing else: the file names come " +
-                "from the stores themselves, so a store renaming its file cannot leave the " +
-                "reset clearing a name nobody uses.",
-            listOf(SettingsStore.FILE_NAME, UpdateCheckStore.FILE_NAME),
+            "Student data, update-system memory, and the community identity, and nothing " +
+                "else: the file names come from the stores themselves, so a store renaming " +
+                "its file cannot leave the reset clearing a name nobody uses.",
+            listOf(
+                SettingsStore.FILE_NAME,
+                UpdateCheckStore.FILE_NAME,
+                CommunityIdentityStore.FILE_NAME,
+            ),
             AppReset.clearedPreferenceFiles,
         )
+    }
+
+    @Test
+    fun `the reset ends the community reporter, not just the local token`() {
+        // Wiping the prefs file alone would leave a live anonymous session server-side
+        // that nobody can sign out anymore; the reset must sign out first, then wipe.
+        val source = sourceFile("src/main/kotlin/com/attendo/data/AppReset.kt").readText()
+
+        assertTrue(
+            "AppReset must sign the community session out before the preference wipe.",
+            source.contains("communityIdentity?.invoke()"),
+        )
+        // And the sign-out must precede the wipe: invoke() runs before the preferences loop.
+        val signOutAt = source.indexOf("communityIdentity?.invoke()")
+        val prefsLoopAt = source.indexOf("for (name in clearedPreferenceFiles)")
+        assertTrue(signOutAt in 0 until prefsLoopAt)
     }
 
     @Test
@@ -77,7 +98,7 @@ class AppResetContractTest {
     }
 
     private fun sourceFile(relative: String): File =
-        generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
+        generateSequence(File(System.getProperty("user.dir") ?: ".")) { it.parentFile }
             .map { File(it, relative) }
             .first(File::exists)
 }

@@ -1,0 +1,202 @@
+{
+  "formatVersion": 2,
+  "app": {
+    "name": "Attendo",
+    "versionName": "1.1",
+    "versionCode": 2
+  },
+  "exportedAt": "2026-09-12T09:30:00Z",
+  "checksum": {
+    "algorithm": "SHA-256",
+    "value": "b7bc6e6d61e43d3894d8a03cc0a467880f1b49a183927d5f85bd1b909c9ce058"
+  },
+  "payload": {
+    "preferences": {
+      "overallTargetBasisPoints": 7500,
+      "courseTargetBasisPoints": 7500,
+      "section": "2nd Yr ECE-A",
+      "batch": "A1",
+      "displayName": "Divyansh",
+      "attendanceBasis": "PERSONAL",
+      "joinedOn": "2026-08-03"
+    },
+    "calendar": {
+      "termStart": "2026-07-28",
+      "termEnd": "2026-12-15",
+      "holidays": [
+        "2026-10-02"
+      ],
+      "workingSaturdays": [
+        "2026-09-12"
+      ]
+    },
+    "semesters": [
+      {
+        "ref": "m1",
+        "year": 2026,
+        "type": "ODD",
+        "startDate": "2026-07-28",
+        "endDate": "2026-12-15",
+        "archived": false
+      },
+      {
+        "ref": "m2",
+        "year": 2026,
+        "type": "EVEN",
+        "startDate": "2026-01-05",
+        "endDate": "2026-05-22",
+        "archived": true
+      }
+    ],
+    "courses": [
+      {
+        "ref": "c1",
+        "name": "Signals and Systems",
+        "code": "EC-301",
+        "targetBasisPoints": 8000,
+        "colorArgb": -12627531,
+        "archived": false,
+        "semesterRef": "m1"
+      },
+      {
+        "ref": "c2",
+        "name": "Digital Electronics",
+        "code": "EC-204",
+        "targetBasisPoints": 7500,
+        "colorArgb": 0,
+        "archived": true,
+        "semesterRef": "m2"
+      }
+    ],
+    "patterns": [
+      {
+        "ref": "p1",
+        "courseRef": "c404",
+        "dayOfWeek": "MONDAY",
+        "startHour": 9,
+        "units": 2,
+        "kind": "LECTURE",
+        "effectiveFrom": "2026-07-28",
+        "room": "204"
+      },
+      {
+        "ref": "p2",
+        "courseRef": "c1",
+        "dayOfWeek": "THURSDAY",
+        "startHour": 14,
+        "units": 2,
+        "kind": "PRACTICAL",
+        "effectiveFrom": "2026-07-28",
+        "room": "Lab 3",
+        "effectiveTo": "2026-09-30"
+      },
+      {
+        "ref": "p3",
+        "courseRef": "c2",
+        "dayOfWeek": "TUESDAY",
+        "startHour": 10,
+        "units": 1,
+        "kind": "TUTORIAL",
+        "effectiveFrom": "2026-01-06"
+      }
+    ],
+    "sessions": [
+      {
+        "ref": "s1",
+        "courseRef": "c1",
+        "date": "2026-07-28",
+        "startHour": 9,
+        "unitsPlanned": 2,
+        "attendedUnits": [
+          0,
+          1
+        ],
+        "status": "HELD",
+        "kind": "LECTURE",
+        "patternRef": "p1",
+        "room": "204",
+        "approvedAt": "2026-07-28T10:15:00Z"
+      },
+      {
+        "ref": "s2",
+        "courseRef": "c1",
+        "date": "2026-08-04",
+        "startHour": 9,
+        "unitsPlanned": 2,
+        "attendedUnits": [],
+        "status": "HELD",
+        "kind": "LECTURE",
+        "patternRef": "p1",
+        "note": "marked absent by mistake",
+        "approvedAt": "2026-08-04T10:20:00Z",
+        "lastEditedAt": "2026-08-04T11:00:00Z"
+      },
+      {
+        "ref": "s3",
+        "courseRef": "c1",
+        "date": "2026-08-06",
+        "startHour": 14,
+        "unitsPlanned": 2,
+        "attendedUnits": [],
+        "status": "CANCELLED",
+        "kind": "PRACTICAL",
+        "patternRef": "p2",
+        "room": "Lab 3",
+        "cancellationReason": "FACULTY_CANCELLED"
+      },
+      {
+        "ref": "s4",
+        "courseRef": "c1",
+        "date": "2026-08-10",
+        "startHour": 14,
+        "unitsPlanned": 2,
+        "attendedUnits": [],
+        "status": "CANCELLED",
+        "kind": "PRACTICAL",
+        "patternRef": "p2",
+        "cancellationReason": "RESCHEDULED",
+        "movedToRef": "s5"
+      },
+      {
+        "ref": "s5",
+        "courseRef": "c1",
+        "date": "2026-08-12",
+        "startHour": 15,
+        "unitsPlanned": 2,
+        "attendedUnits": [
+          0
+        ],
+        "status": "HELD",
+        "kind": "PRACTICAL",
+        "room": "Lab 3",
+        "note": "moved from Thursday",
+        "movedFromRef": "s4"
+      },
+      {
+        "ref": "s6",
+        "courseRef": "c2",
+        "date": "2026-02-10",
+        "startHour": 10,
+        "unitsPlanned": 1,
+        "attendedUnits": [
+          0
+        ],
+        "status": "HELD",
+        "kind": "TUTORIAL",
+        "patternRef": "p3"
+      },
+      {
+        "ref": "s7",
+        "courseRef": "c1",
+        "date": "2026-12-14",
+        "startHour": 9,
+        "unitsPlanned": 2,
+        "attendedUnits": [],
+        "status": "SCHEDULED",
+        "kind": "LECTURE",
+        "patternRef": "p1",
+        "room": "204"
+      }
+    ]
+  }
+}

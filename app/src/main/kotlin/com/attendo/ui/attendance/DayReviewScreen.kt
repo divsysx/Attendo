@@ -158,6 +158,11 @@ private fun DayContent(
             }
         }
 
+        // Possible timetable changes and day polls are gone by design: the community
+        // feature lives in the Rooms tab (rooms and their questions), and the day
+        // view stays purely the student's own record. A community report was advice
+        // about the world; it never marked, cancelled or moved anything here.
+
         items(state.rows, key = { it.key }) { row ->
             SessionCard(
                 row = row,
@@ -181,7 +186,7 @@ private fun DayContent(
                         "No classes on this day. You can still add an extra one."
                     } else {
                         state.calendar.notTeachingReason(state.date) +
-                            " — the timetable is not applied, so nothing counts here."
+                            ". The timetable is not applied, so nothing counts here."
                     },
                 )
             }
@@ -522,7 +527,7 @@ private fun DayDialogHost(
             text = {
                 Text(
                     "Every class still to be marked on ${state.date.shortLabel()} will be " +
-                        "recorded as missed — ${hours(state.unitsPending)} in all. They still " +
+                        "recorded as missed. That's ${hours(state.unitsPending)} in all. They still " +
                         "count as held, so they lower your attendance.\n\n" +
                         "Classes you have already marked are left alone.",
                 )
@@ -542,7 +547,7 @@ private fun DayDialogHost(
 
         is DayDialog.Cancel -> CancelReasonDialog(
             title = "Cancel this class",
-            body = "It stops counting on both sides of the fraction — neither attended nor missed.",
+            body = "It stops counting on both sides of the fraction. Neither attended nor missed.",
             onPick = { reason ->
                 viewModel.cancel(dialog.row, reason)
                 onDismiss()

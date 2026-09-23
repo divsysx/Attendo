@@ -85,7 +85,7 @@ class DayReviewViewModel(
             date = day,
             patterns = patterns.filter { it.courseId in activeIds },
             existing = ownSessions,
-            calendar = appSettings.calendar,
+            calendar = appSettings.effectiveCalendar,
         )
         DayReviewUiState(
             date = day,
@@ -96,7 +96,7 @@ class DayReviewViewModel(
             day = AttendanceEngine.dayAttendance(day, ownSessions),
             courseById = courses.associateBy { it.id },
             addableCourses = active,
-            calendar = appSettings.calendar,
+            calendar = appSettings.effectiveCalendar,
         )
     }
         .flowOn(Dispatchers.Default)
@@ -125,7 +125,7 @@ class DayReviewViewModel(
     /** Commits every pending row, drafts included, as fully attended. */
     fun approveAll() {
         viewModelScope.launch {
-            attendance.approveDay(date.value, settings.current.calendar)
+            attendance.approveDay(date.value, settings.current.effectiveCalendar)
         }
     }
 
@@ -135,7 +135,7 @@ class DayReviewViewModel(
      */
     fun markAllAbsent() {
         viewModelScope.launch {
-            attendance.markDayAbsent(date.value, settings.current.calendar)
+            attendance.markDayAbsent(date.value, settings.current.effectiveCalendar)
         }
     }
 

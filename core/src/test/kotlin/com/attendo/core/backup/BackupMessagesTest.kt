@@ -18,21 +18,28 @@ import org.junit.Test
  * > token at offset 3: Expected EOF after parsing, but had { instead at path: $
  *
  * Every word after the first sentence is addressed to whoever wrote the parser. Somebody who
- * has just picked a PDF out of their Downloads folder cannot act on a character offset, and the
- * one thing they *can* act on — pick a different file — was buried behind it.
+ * has just picked a PDF out of their Downloads folder cannot act on a character offset.
  *
- * So the mapping is deliberately **total**: every way a file can be unusable produces the same
- * two sentences, including the cases where the app knows more (a backup from a newer build, a
- * file whose checksum fails). The reasoning is that the action is the same in all of them, the
- * distinction is one nobody outside the code can check, and a message that is right nine times
- * out of ten teaches people to ignore it the tenth. The precise reason is not lost — it goes to
- * the log, which is what these tests check second.
+ * For a while the answer was one message for every refusal, on the argument that the remedy is
+ * the same in all of them: pick a different file. Field testing on a real phone showed the
+ * cost of that — a backup damaged in transit and a backup from a future version of the app are
+ * both dead ends, but only one of them can tell the student what to do next. So the screen now
+ * gets one plain reason per fault family, under two rules that keep it human:
+ *
+ *  1. Nothing only a parser would know reaches the student — no tokens, no offsets, no field
+ *     paths, no numbers. The reason names the *family* of fault, in words.
+ *  2. One reason per file, the first one. The reader finds the earliest fault first (a file
+ *     that is not JSON never gets as far as having a version), and a file with three things
+ *     wrong with it does not need three sentences, because the student's next move does not
+ *     change with the count.
+ *
+ * The precise reasons are not lost — they go to the log, which is what these tests check last.
  */
 class BackupMessagesTest {
 
     private val good = encoded()
 
-    // ---- the words themselves -----------------------------------------------
+    // ---- the wrong file, the oldest case --------------------------------------
 
     @Test
     fun `the refusal says what is wrong and what to do about it`() {
@@ -44,19 +51,8 @@ class BackupMessagesTest {
     }
 
     @Test
-    fun `the two sentences are also available as one line`() {
-        assertEquals(
-            "That file isn't a valid Attendo backup. " +
-                "Choose an Attendo backup (.json) file and try again.",
-            BackupMessages.REFUSED,
-        )
-    }
-
-    // ---- every way a file can be the wrong file ------------------------------
-
-    @Test
-    fun `every kind of unusable file is refused in the same words`() {
-        unusableFiles().forEach { (what, text) ->
+    fun `a file that is not a backup says so in those words`() {
+        listOf("a PDF" to PDF, "a CSV" to CSV, "a photo" to PNG).forEach { (what, text) ->
             val failed = failedOn(what, text)
 
             assertEquals(what, BackupMessages.NOT_A_BACKUP, failed.userMessage)
@@ -64,29 +60,88 @@ class BackupMessagesTest {
         }
     }
 
-    @Test
-    fun `nothing the parser said reaches the student`() {
-        unusableFiles().forEach { (what, text) ->
-            val failed = failedOn(what, text)
+    // ---- the reasons differ where the remedy does -----------------------------
 
-            listOf(failed.userMessage, failed.userHint).forEach { shown ->
-                JARGON.forEach { word ->
-                    assertFalse("$what showed \"$word\": $shown", shown.contains(word))
-                }
-                // No offsets, no counts, no version numbers: the only digits anywhere near this
-                // screen came out of the file, and none of them mean anything to the reader.
-                assertFalse("$what showed a number: $shown", shown.any(Char::isDigit))
-            }
+    @Test
+    fun `every kind of problem has its own plain reason`() {
+        reasons().forEach { (problem, expectedMessage, expectedHint) ->
+            assertEquals(problem.message, expectedMessage, BackupMessages.message(problem))
+            assertEquals(problem.message, expectedHint, BackupMessages.hint(problem))
         }
     }
 
     @Test
-    fun `the message is two short sentences rather than a report`() {
-        val failed = failedOn("a PDF", PDF)
+    fun `a refused file shows the reason for its first fault`() {
+        unusableFiles().forEach { (what, text) ->
+            val failed = failedOn(what, text)
 
-        assertEquals(1, failed.userMessage.count { it == '.' })
-        assertTrue(failed.userMessage.length < 60)
-        assertTrue(failed.userHint.length < 60)
+            assertEquals(
+                what,
+                BackupMessages.message(failed.problems.first()),
+                failed.userMessage,
+            )
+            assertEquals(what, BackupMessages.hint(failed.problems.first()), failed.userHint)
+        }
+    }
+
+    @Test
+    fun `a backup from a newer build says so and points at updating`() {
+        val failed = failedOn(
+            "a backup from a newer Attendo",
+            tamper(good) { it.withField("formatVersion", BackupCodec.FORMAT_VERSION + 1) },
+        )
+
+        assertEquals(
+            "This backup was saved by a newer version of Attendo.",
+            failed.userMessage,
+        )
+        assertEquals("Update Attendo, then import it again.", failed.userHint)
+    }
+
+    @Test
+    fun `a damaged backup says so and points at another copy`() {
+        val failed = failedOn(
+            "a damaged backup",
+            tamperPayload(good) {
+                it.withRecord("courses", "c1") { course -> course.withField("name", "Something else") }
+            },
+        )
+
+        assertEquals(
+            "This backup is damaged. Part of it is missing or was changed after it was saved.",
+            failed.userMessage,
+        )
+        assertEquals("If you have another copy of the file, try that one.", failed.userHint)
+    }
+
+    // ---- the reasons stay human ------------------------------------------------
+
+    @Test
+    fun `nothing the parser said reaches the student`() {
+        val shown = (unusableFiles().map { failedOn(it.first, it.second) } +
+            EVERY_PROBLEM.map { BackupReadResult.Failed(listOf(it)) })
+            .flatMap { listOf(it.userMessage, it.userHint) }
+
+        shown.forEach { text ->
+            JARGON.forEach { word ->
+                assertFalse("showed \"$word\": $text", text.contains(word))
+            }
+            // No offsets, no counts, no version numbers: the only digits anywhere near this
+            // screen came out of the file, and none of them mean anything to the reader.
+            assertFalse("showed a number: $text", text.any(Char::isDigit))
+        }
+    }
+
+    @Test
+    fun `every reason is a short line, not a report`() {
+        EVERY_PROBLEM.forEach { problem ->
+            val message = BackupMessages.message(problem)
+            val hint = BackupMessages.hint(problem)
+
+            assertTrue("message ran on: $message", message.count { it == '.' } <= 2)
+            assertTrue("message too long: $message", message.length < 90)
+            assertTrue("hint too long: $hint", hint.length < 60)
+        }
     }
 
     // ---- the reason is kept, for the log ------------------------------------
@@ -105,7 +160,7 @@ class BackupMessagesTest {
     }
 
     @Test
-    fun `the log names every fault, not just the first`() {
+    fun `the log names every fault while the screen names the first`() {
         val several = repack(good) { payload ->
             payload
                 .withRecord("sessions", "s1") { it.withField("courseRef", "c99") }
@@ -118,9 +173,9 @@ class BackupMessagesTest {
         failed.problems.forEach { problem ->
             assertTrue(problem.message, failed.diagnostics.contains(problem.message))
         }
-        // And still one sentence on screen: the student's next move does not change with the
-        // number of things wrong with the file.
-        assertEquals(BackupMessages.NOT_A_BACKUP, failed.userMessage)
+        // One reason on screen: the earliest fault, because that is the one the reader found
+        // first and the only one the student can act on.
+        assertEquals(BackupMessages.message(failed.problems.first()), failed.userMessage)
     }
 
     @Test
@@ -132,20 +187,79 @@ class BackupMessagesTest {
 
     // ---- the mapping is total ------------------------------------------------
 
-    @Test
-    fun `every kind of problem maps to the same sentence`() {
-        EVERY_PROBLEM.forEach { problem ->
-            val failed = BackupReadResult.Failed(listOf(problem))
-
-            assertEquals(problem.message, BackupMessages.NOT_A_BACKUP, failed.userMessage)
-            assertEquals(problem.message, BackupMessages.CHOOSE_A_BACKUP, failed.userHint)
-            assertEquals(problem.message, failed.diagnostics)
-        }
-    }
+    /**
+     * One entry for every kind of problem, with the exact words it must produce. Exhaustive
+     * by construction: [reasons] lists every [BackupProblem] variant, and a new one has to be
+     * added here to be given words at all — the `when` in [BackupMessages] will not compile
+     * until it is.
+     */
+    private fun reasons(): List<Triple<BackupProblem, String, String>> = listOf(
+        Triple(
+            BackupProblem.NotJson("Unexpected JSON token at offset 3"),
+            BackupMessages.NOT_A_BACKUP,
+            BackupMessages.CHOOSE_A_BACKUP,
+        ),
+        Triple(
+            BackupProblem.NotABackup("it has no formatVersion"),
+            BackupMessages.NOT_A_BACKUP,
+            BackupMessages.CHOOSE_A_BACKUP,
+        ),
+        Triple(
+            BackupProblem.UnsupportedFormatVersion(
+                found = BackupCodec.FORMAT_VERSION + 1,
+                supported = BackupCodec.supportedFormatVersions,
+            ),
+            "This backup was saved by a newer version of Attendo.",
+            "Update Attendo, then import it again.",
+        ),
+        Triple(
+            BackupProblem.UnsupportedFormatVersion(
+                found = 0,
+                supported = BackupCodec.supportedFormatVersions,
+            ),
+            "This backup is too old to be read.",
+            "You will need a backup saved by a newer version of the app.",
+        ),
+        Triple(
+            BackupProblem.UnknownChecksumAlgorithm("CRC-32"),
+            "This backup was saved by a newer version of Attendo.",
+            "Update Attendo, then import it again.",
+        ),
+        Triple(
+            BackupProblem.ChecksumMismatch(expected = "a1b2c3", actual = "d4e5f6"),
+            "This backup is damaged. Part of it is missing or was changed after it was saved.",
+            "If you have another copy of the file, try that one.",
+        ),
+        Triple(
+            BackupProblem.MalformedField(path = "sessions[s1].date", detail = "expected a date"),
+            "This backup is incomplete, so its contents cannot be trusted.",
+            "Try exporting a new backup from the app it came from.",
+        ),
+        Triple(
+            BackupProblem.DanglingReference(from = "sessions[s1].courseRef", ref = "c99"),
+            "Parts of this backup disagree with each other.",
+            "Try exporting a new backup from the app it came from.",
+        ),
+        Triple(
+            BackupProblem.DuplicateReference(kind = "course", ref = "c1"),
+            "Parts of this backup disagree with each other.",
+            "Try exporting a new backup from the app it came from.",
+        ),
+        Triple(
+            BackupProblem.InvalidValue(path = "sessions[s1].startHour", detail = "outside the day"),
+            "This backup contains data that does not make sense.",
+            "Try exporting a new backup from the app it came from.",
+        ),
+        Triple(
+            BackupProblem.BrokenReschedule(ref = "s4", detail = "does not point back"),
+            "This backup has a moved class whose records do not agree.",
+            "Try exporting a new backup from the app it came from.",
+        ),
+    )
 
     @Test
     fun `every diagnostic still says which kind of fault it was`() {
-        EVERY_PROBLEM.forEach { problem ->
+        reasons().forEach { (problem, _, _) ->
             val subject = subjectOf(problem)
 
             assertTrue(
@@ -158,10 +272,9 @@ class BackupMessagesTest {
     // ---- fixtures ------------------------------------------------------------
 
     /**
-     * One entry for every way an import can fail — as files, not as hand-made problems.
-     *
-     * The first four are the case that prompted all of this: a file that was never a backup,
-     * picked out of a folder full of them.
+     * Files, not hand-made problems, for the paths that go through the real reader: the case
+     * that prompted all of this was a file that was never a backup, picked out of a folder
+     * full of them.
      */
     private fun unusableFiles(): List<Pair<String, String>> = listOf(
         "a PDF" to PDF,
@@ -174,8 +287,6 @@ class BackupMessagesTest {
         "someone else's JSON" to """{"items": [], "title": "shopping list"}""",
         "a JSON array" to "[1, 2, 3]",
         "an envelope with no payload" to tamper(good) { it.withoutField("payload") },
-        "a backup from a newer Attendo" to
-            tamper(good) { it.withField("formatVersion", BackupCodec.FORMAT_VERSION + 1) },
         "a checksum this build cannot verify" to tamper(good) {
             it.withField(
                 "checksum",
@@ -214,7 +325,7 @@ class BackupMessagesTest {
 
         private const val CSV = "Subject,Room,Day,Hour\nADEC,204,MONDAY,9\n"
 
-        private const val PNG = "PNG\r\n\n   \rIHDR"
+        private const val PNG = "PNG\r\n\n  \rIHDR"
 
         /**
          * Everything the old message said that nobody choosing the wrong file could act on.
@@ -225,39 +336,27 @@ class BackupMessagesTest {
         private val JARGON = listOf(
             "JSON", "token", "Token", "offset", "Offset", "EOF", "eof", "Exception",
             "expected", "Expected", "\$", "at path", "parse", "Parse", "parsing",
-            "serial", "kotlinx", "\n",
+            "serial", "kotlinx", "checksum", "Checksum", "\n", "—",
         )
 
-        /**
-         * An example of every kind of refusal there is.
-         *
-         * Hand-written, because listing them needs reflection this module deliberately does not
-         * depend on. [subjectOf] is what keeps the list honest: it is an exhaustive `when`, so a
-         * new [BackupProblem] stops this file compiling, and adding the branch without adding
-         * the example here leaves that branch untested.
-         */
+        /** Every kind of problem, for the tests that check all the words at once. */
         private val EVERY_PROBLEM: List<BackupProblem> = listOf(
-            BackupProblem.NotJson(
-                "Unexpected JSON token at offset 3: Expected EOF after parsing, but had { " +
-                    "instead at path: \$",
-            ),
+            BackupProblem.NotJson("Unexpected JSON token at offset 3"),
             BackupProblem.NotABackup("it has no formatVersion"),
             BackupProblem.UnsupportedFormatVersion(
                 found = BackupCodec.FORMAT_VERSION + 1,
                 supported = BackupCodec.supportedFormatVersions,
             ),
-            BackupProblem.ChecksumMismatch(expected = "a1b2c3", actual = "d4e5f6"),
-            BackupProblem.UnknownChecksumAlgorithm("CRC-32"),
-            BackupProblem.MalformedField(
-                path = "sessions[s1].date",
-                detail = "expected a date as YYYY-MM-DD",
+            BackupProblem.UnsupportedFormatVersion(
+                found = 0,
+                supported = BackupCodec.supportedFormatVersions,
             ),
+            BackupProblem.UnknownChecksumAlgorithm("CRC-32"),
+            BackupProblem.ChecksumMismatch(expected = "a1b2c3", actual = "d4e5f6"),
+            BackupProblem.MalformedField(path = "sessions[s1].date", detail = "expected a date"),
             BackupProblem.DanglingReference(from = "sessions[s1].courseRef", ref = "c99"),
             BackupProblem.DuplicateReference(kind = "course", ref = "c1"),
-            BackupProblem.InvalidValue(
-                path = "sessions[s1].startHour",
-                detail = "outside the teaching day",
-            ),
+            BackupProblem.InvalidValue(path = "sessions[s1].startHour", detail = "outside the day"),
             BackupProblem.BrokenReschedule(ref = "s4", detail = "does not point back"),
         )
 

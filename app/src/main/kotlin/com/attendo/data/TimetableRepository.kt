@@ -12,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.security.MessageDigest
 
 /**
  * The room timetable, plus the two acronym keys that make it readable.
@@ -26,6 +27,15 @@ data class Timetable(
     val subjects: Glossary,
     val faculty: Glossary,
     val problems: List<ImportProblem> = emptyList(),
+    /**
+     * Which edition of the printed timetable this is, as a digest of the parsed file.
+     *
+     * Not the date in the header comment, which nothing reads and which would let a file be
+     * edited without the marker noticing. A digest changes whenever a single cell does, which
+     * is the event a migration is for; and it is derived rather than declared so that shipping
+     * a new timetable cannot forget to bump it. See [TimetableMigrator].
+     */
+    val revision: String = "",
 ) {
     val isEmpty: Boolean get() = bookings.isEmpty()
 
@@ -65,7 +75,8 @@ class TimetableRepository(
     }
 
     private suspend fun parse(): Timetable = withContext(Dispatchers.IO) {
-        val imported = TimetableCsv.parse(read(TIMETABLE_ASSET))
+        val text = read(TIMETABLE_ASSET)
+        val imported = TimetableCsv.parse(text)
         Timetable(
             // mergeAdjacent is a no-op on the shipped file, which already writes a 2-hour
             // block as one row (BundledTimetableTest pins that). It runs anyway so a
@@ -75,8 +86,23 @@ class TimetableRepository(
             subjects = Glossary.parse(read(SUBJECTS_ASSET)),
             faculty = Glossary.parse(read(FACULTY_ASSET)),
             problems = imported.problems,
+            revision = digest(text),
         )
     }
+
+    /**
+     * A short, stable fingerprint of the timetable file.
+     *
+     * `String.hashCode` would do and has collided in the wild for strings of this shape; the
+     * cost of being wrong is a migration that never runs, so this takes the real thing and
+     * keeps the first twelve hex digits — 48 bits, which no semester's worth of timetable
+     * edits will ever exhaust.
+     */
+    private fun digest(text: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(text.toByteArray(Charsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte) }
+            .take(12)
 
     private fun read(name: String): String =
         assets.open(name).bufferedReader().use { it.readText() }

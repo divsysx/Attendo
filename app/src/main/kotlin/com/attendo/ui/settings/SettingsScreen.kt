@@ -3,8 +3,6 @@ package com.attendo.ui.settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,17 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -36,12 +27,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.attendo.core.model.AttendanceBasis
-import com.attendo.core.model.Percent
 import com.attendo.data.ThemePreference
 import com.attendo.ui.components.AttendoDatePickerDialog
 import com.attendo.ui.components.AttendoTopBar
@@ -49,32 +40,49 @@ import com.attendo.ui.components.ChipChoice
 import com.attendo.ui.components.LoadingPane
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.courses
-import com.attendo.ui.dayMonth
 import com.attendo.ui.days
 import com.attendo.ui.fullLabel
-import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
-
-/** The targets worth offering, matching the course editor's list. */
-private val TARGETS: List<Percent> =
-    listOf(50.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0).map { Percent.ofPercent(it) }
 
 /** As much of a name as the top bar can show next to the date. */
 private const val MAX_NAME_LENGTH = 24
 
 /**
- * The term's shape: what counts as a pass, when the term runs, and which days it does not.
+ * The project's home, opened by the star row and by the "View source code" line under it.
  *
- * Every control here changes what the timetable implies for days that have already been
- * generated, so the ViewModel corrects the sessions table as each one is used.
+ * One constant rather than two literals: a footer that pointed at the repo from one row and
+ * somewhere else from the next would be a footer nobody could trust.
+ */
+internal const val GITHUB_REPO_URL = "https://github.com/divsysx/Attendo"
+
+/** Where a student who wants to say thank you can. The app never asks for it. */
+internal const val SUPPORT_URL = "https://buymeacoffee.com/divsysx"
+
+/**
+ * The term's shape: when it runs, which days it does not, and what counts as a pass.
+ *
+ * This screen is a list of what the app can be asked to do, not a form. The two date-driven
+ * editors that used to sit inline — the holiday list and the working-Saturday picker — and
+ * the target controls are each on their own screen now, and each row here says in one line
+ * what is currently configured and opens it. What is left inline is the handful of things
+ * that genuinely are a single choice: your name, the term's two dates, your section, the
+ * theme.
+ *
+ * Every control that remains changes what the timetable implies for days that have already
+ * been generated, so the ViewModel corrects the sessions table as each one is used.
  */
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
     onSeed: () -> Unit,
     onOpenBackup: () -> Unit,
+    onOpenAccount: () -> Unit,
+    onOpenMyCommunity: () -> Unit,
+    onOpenReportingIdentity: () -> Unit,
+    onOpenTargets: () -> Unit,
+    onOpenHolidays: () -> Unit,
+    onOpenWorkingSaturdays: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
+    accountViewModel: AccountViewModel = viewModel(factory = AccountViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var dialog by remember { mutableStateOf<SettingsDialog?>(null) }
@@ -96,8 +104,15 @@ fun SettingsScreen(
             SettingsContent(
                 state = state,
                 viewModel = viewModel,
+                accountViewModel = accountViewModel,
                 onSeed = onSeed,
                 onOpenBackup = onOpenBackup,
+                onOpenAccount = onOpenAccount,
+                onOpenMyCommunity = onOpenMyCommunity,
+                onOpenReportingIdentity = onOpenReportingIdentity,
+                onOpenTargets = onOpenTargets,
+                onOpenHolidays = onOpenHolidays,
+                onOpenWorkingSaturdays = onOpenWorkingSaturdays,
                 onFeedback = { feedbackOpen = true },
                 onDialog = { dialog = it },
             )
@@ -116,14 +131,6 @@ fun SettingsScreen(
             initial = state.calendar.termEnd,
             earliest = state.calendar.termStart,
             onPick = viewModel::setTermEnd,
-            onDismiss = { dialog = null },
-        )
-
-        SettingsDialog.AddHoliday -> AttendoDatePickerDialog(
-            initial = state.today.coerceIn(state.calendar.termStart, state.calendar.termEnd),
-            earliest = state.calendar.termStart,
-            latest = state.calendar.termEnd,
-            onPick = viewModel::addHoliday,
             onDismiss = { dialog = null },
         )
 
@@ -155,17 +162,23 @@ fun SettingsScreen(
 private fun SettingsContent(
     state: SettingsUiState,
     viewModel: SettingsViewModel,
+    accountViewModel: AccountViewModel,
     onSeed: () -> Unit,
     onOpenBackup: () -> Unit,
+    onOpenAccount: () -> Unit,
+    onOpenMyCommunity: () -> Unit,
+    onOpenReportingIdentity: () -> Unit,
+    onOpenTargets: () -> Unit,
+    onOpenHolidays: () -> Unit,
+    onOpenWorkingSaturdays: () -> Unit,
     onFeedback: () -> Unit,
     onDialog: (SettingsDialog) -> Unit,
 ) {
     val calendar = state.calendar
+    val context = LocalContext.current
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val appearance by viewModel.appearance.collectAsStateWithLifecycle()
-    val saturdays = remember(calendar.termStart, calendar.termEnd) {
-        saturdaysBetween(calendar.termStart, calendar.termEnd)
-    }
+    val accountState by accountViewModel.state.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -182,9 +195,9 @@ private fun SettingsContent(
                 )
                 Text(
                     text = "Used to greet you on the Attendance tab, and to say whose file it " +
-                        "is when you import a backup. It stays on this phone: there is no " +
-                        "account, nothing you record is sent anywhere, and none of your data " +
-                        "is filed under it.",
+                        "is when you import a backup. It is a label rather than a login: no " +
+                        "row is keyed by it. It travels with your account's copy of your " +
+                        "settings if you sign in, and stays on this phone if you do not.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -193,28 +206,43 @@ private fun SettingsContent(
 
         item { Divider() }
 
-        item { SectionLabel("Overall target") }
-        item {
-            ChipChoice(
-                options = TARGETS,
-                selected = state.settings.overallTarget,
-                label = { "${it.format(0)}%" },
-                onSelect = viewModel::setOverallTarget,
-            )
+        // The install's identity, compact on purpose: the account itself — its state,
+        // its GitHub link, its sign-out — lives on its own screen, and Settings shows
+        // only the way in. Right under "You" because it is the other half of who this
+        // install is. Label and row both hide on builds without an endpoint.
+        if (accountState.available) {
+            item { SectionLabel("Account") }
+            item {
+                Column {
+                    SettingRow(
+                        label = "Manage your Attendo account",
+                        value = "Open",
+                        onClick = onOpenAccount,
+                    )
+                    Text(
+                        text = "Your GitHub sign-in, and the account your Community " +
+                            "reports are associated with.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
 
-        item { SectionLabel("Target for new courses") }
+        item { Divider() }
+
+        item { SectionLabel("Targets") }
         item {
             Column {
-                ChipChoice(
-                    options = TARGETS,
-                    selected = state.settings.courseTarget,
-                    label = { "${it.format(0)}%" },
-                    onSelect = viewModel::setCourseTarget,
+                SettingRow(
+                    label = "Attendance Targets",
+                    value = state.targetsSummary,
+                    onClick = onOpenTargets,
                 )
-                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Courses already added keep the target they have.",
+                    text = "The threshold your overall figure is judged against, what a new " +
+                        "course starts at, and the one place a single percentage can be " +
+                        "applied to the courses you already have.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -236,67 +264,32 @@ private fun SettingsContent(
                     value = calendar.termEnd.fullLabel(),
                     onClick = { onDialog(SettingsDialog.TermEnd) },
                 )
+                SettingRow(
+                    label = "Holidays",
+                    value = state.holidaysSummary,
+                    onClick = onOpenHolidays,
+                )
+
+                // Hidden outright for a section the timetable teaches on Saturday every
+                // week: its Saturdays come from its weekly pattern, so this would be a
+                // control the app ignores. See RecurringSaturdays for which sections those
+                // are. Nothing else on this screen or below it moves when it goes.
+                if (!state.saturdayIsRecurring) {
+                    SettingRow(
+                        label = "Working Saturdays",
+                        value = state.workingSaturdaysSummary,
+                        onClick = onOpenWorkingSaturdays,
+                    )
+                }
+
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "${days(state.teachingDays)} of teaching, " +
-                        "${state.teachingDaysSoFar} of them gone.",
+                        "${state.teachingDaysSoFar} of them gone. A class on a holiday is " +
+                        "cancelled rather than missed, so it counts for neither side of your " +
+                        "percentage.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        item { Divider() }
-
-        item {
-            SectionLabel("Holidays") {
-                TextButton(onClick = { onDialog(SettingsDialog.AddHoliday) }) {
-                    Icon(Icons.Filled.Add, contentDescription = null, Modifier.size(18.dp))
-                    Spacer(Modifier.size(4.dp))
-                    Text("Add")
-                }
-            }
-        }
-        item {
-            if (state.holidays.isEmpty()) {
-                Text(
-                    text = "None. A class on a day you mark a holiday is cancelled rather than " +
-                        "missed, so it counts for neither side.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                DateChips(
-                    dates = state.holidays,
-                    isOn = { true },
-                    onToggle = viewModel::removeHoliday,
-                    removable = true,
-                )
-            }
-        }
-
-        item { Divider() }
-
-        item { SectionLabel("Working Saturdays") }
-        item {
-            Column {
-                Text(
-                    text = "Saturday is a holiday unless you say otherwise, so a Saturday slot " +
-                        "only generates classes on the dates ticked here.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                DateChips(
-                    dates = saturdays,
-                    isOn = { it in calendar.workingSaturdays },
-                    onToggle = { date ->
-                        if (date in calendar.workingSaturdays) {
-                            viewModel.removeWorkingSaturday(date)
-                        } else {
-                            viewModel.addWorkingSaturday(date)
-                        }
-                    },
                 )
             }
         }
@@ -360,9 +353,9 @@ private fun SettingsContent(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "For a spot admission or a late transfer. Nothing is deleted either " +
-                        "way — the classes held before you arrived stay in your history and can " +
-                        "still be opened; this only decides which of them count towards your " +
-                        "percentage.",
+                        "way: the classes held before you arrived stay in your history and can " +
+                        "still be opened, and this only decides which of them count towards " +
+                        "your percentage.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -428,9 +421,54 @@ private fun SettingsContent(
                     onClick = onOpenBackup,
                 )
                 Text(
-                    text = "A semester's attendance cannot be reconstructed from anything else — " +
-                        "not from the timetable, and not from memory. Export a file, keep it " +
-                        "off this phone, and import it on the next one.",
+                    text = "A semester's attendance cannot be reconstructed from anything " +
+                        "else, not from the timetable, and not from memory. Export a file, " +
+                        "keep it off this phone, and import it on the next one.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item { Divider() }
+
+        item { SectionLabel("Community") }
+        item {
+            Column {
+                SettingRow(
+                    label = "My reports and polls",
+                    value = "Open",
+                    onClick = onOpenMyCommunity,
+                )
+                Text(
+                    text = "Everything you have reported or asked, in one place, with the " +
+                        "undo and withdraw actions that belong to their owner. All of it is " +
+                        "filed anonymously under a random ID created on this phone: no name, " +
+                        "no email, nothing that identifies you.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item { Divider() }
+
+        // Its own section, deliberately not part of "Data & backup": the file this
+        // leads to can move who the reports belong to, so it gets its own screen,
+        // its own passphrase and its own warnings.
+        item { SectionLabel("Reporting identity") }
+        item {
+            Column {
+                SettingRow(
+                    label = "Move or restore my reporting identity",
+                    value = "Open",
+                    onClick = onOpenReportingIdentity,
+                )
+                Text(
+                    text = "A separate, encrypted file that can move the anonymous ID " +
+                        "your reports are filed under, and everything it has reported, " +
+                        "to a new phone. It is never part of the backup above, and the " +
+                        "old phone keeps a 24-hour say in any move.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -449,7 +487,8 @@ private fun SettingsContent(
                 )
                 Text(
                     text = "Opens your email app with the message started for you. Nothing is " +
-                        "sent from inside Attendo — there is no account and no server.",
+                        "sent from inside Attendo — the message leaves through your mail app, " +
+                        "not through a server of ours.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -463,7 +502,7 @@ private fun SettingsContent(
             Text(
                 text = "Attendance is counted in hours, not in classes. Sitting " +
                     "through one hour of a two-hour lab is 50% of that lab, and the course " +
-                    "figure is every hour attended divided by every hour held — never an " +
+                    "figure is every hour attended divided by every hour held, never an " +
                     "average of averages. Cancelled classes count for neither side, and a " +
                     "class stays out of the maths entirely until it is marked.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -523,6 +562,36 @@ private fun SettingsContent(
                 Text(text = "Attendo", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = state.versionLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                // The project footer. Nothing here changes how Attendo behaves, which is why
+                // it sits under About rather than growing a heading of its own — the brief
+                // asked for a footer, and a fourth settings category would be a different
+                // thing wearing the same words. Both rows leave the app through the same
+                // ACTION_VIEW intent the feedback section uses; nothing is rendered in-app.
+                Spacer(Modifier.height(16.dp))
+                SettingRow(
+                    label = "⭐ Enjoying Attendo? Star the project on GitHub",
+                    value = "GitHub",
+                    onClick = { context.openUrl(GITHUB_REPO_URL) },
+                )
+                Text(
+                    text = "View source code — Attendo is open source under the MIT licence.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(16.dp))
+                SettingRow(
+                    label = "☕ Support development",
+                    value = "Buy me a coffee",
+                    onClick = { context.openUrl(SUPPORT_URL) },
+                )
+                Text(
+                    text = "Attendo is free, with no ads and no paid tier. A coffee is a " +
+                        "thank-you rather than a subscription, and nothing in the app " +
+                        "depends on it.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -609,64 +678,14 @@ private fun NameDialog(
     )
 }
 
-/**
- * A wrapping row of dates that can be turned on and off.
- *
- * [removable] gives each chip a cross, for the lists where "off" means "gone" — a holiday
- * is either in the list or not, while a Saturday is one of a fixed set and stays visible
- * when unticked.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DateChips(
-    dates: List<LocalDate>,
-    isOn: (LocalDate) -> Boolean,
-    onToggle: (LocalDate) -> Unit,
-    removable: Boolean = false,
-) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        dates.forEach { date ->
-            FilterChip(
-                selected = isOn(date),
-                onClick = { onToggle(date) },
-                label = { Text(date.dayMonth()) },
-                trailingIcon = if (removable) {
-                    {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Remove",
-                            modifier = Modifier.size(FilterChipDefaults.IconSize),
-                        )
-                    }
-                } else {
-                    null
-                },
-            )
-        }
-    }
-}
-
 @Composable
 private fun Divider() {
     HorizontalDivider(Modifier.padding(top = 4.dp))
 }
 
-/** Every Saturday the semester contains, for the working-Saturday picker. */
-private fun saturdaysBetween(from: LocalDate, to: LocalDate): List<LocalDate> {
-    val first = from.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
-    return generateSequence(first) { it.plusWeeks(1) }
-        .takeWhile { !it.isAfter(to) }
-        .toList()
-}
-
 private sealed interface SettingsDialog {
     data object TermStart : SettingsDialog
     data object TermEnd : SettingsDialog
-    data object AddHoliday : SettingsDialog
     data object JoiningDate : SettingsDialog
     data object DisplayName : SettingsDialog
 }

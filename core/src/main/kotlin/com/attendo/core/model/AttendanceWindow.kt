@@ -77,7 +77,7 @@ enum class AttendanceBasis(val label: String, val explanation: String) {
     /** From the start of the semester, matching the register the university keeps. */
     UNIVERSITY(
         "Semester start",
-        "Counts every class since the semester began — the figure the university uses.",
+        "Counts every class since the semester began. This is the figure the university uses.",
     ),
 
     /** From the day this student joined, for a mid-semester admission. */

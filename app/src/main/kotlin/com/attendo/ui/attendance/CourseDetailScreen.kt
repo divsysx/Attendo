@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -25,10 +26,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +52,7 @@ import com.attendo.ui.components.LoadingPane
 import com.attendo.ui.components.MarkSwatch
 import com.attendo.ui.components.MonthCalendar
 import com.attendo.ui.components.PercentHeadline
+import com.attendo.ui.components.PercentPicker
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.components.TargetAdviceLine
 import com.attendo.ui.classes
@@ -80,6 +85,7 @@ fun CourseDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
+    var editingTarget by remember { mutableStateOf(false) }
 
     // The course can vanish under this screen — deleted from the course list while it sits
     // on the back stack. Popping is better than showing an empty shell.
@@ -121,8 +127,21 @@ fun CourseDetailScreen(
                 onPreviousMonth = viewModel::previousMonth,
                 onNextMonth = viewModel::nextMonth,
                 onOpenDay = onOpenDay,
+                onEditTarget = { editingTarget = true },
             )
         }
+    }
+
+    if (editingTarget) {
+        val current = state.course?.targetPercent ?: Percent.DEFAULT_TARGET
+        TargetDialog(
+            current = current,
+            onConfirm = { chosen ->
+                viewModel.setTarget(chosen)
+                editingTarget = false
+            },
+            onDismiss = { editingTarget = false },
+        )
     }
 }
 
@@ -132,6 +151,7 @@ private fun CourseDetailContent(
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onOpenDay: (LocalDate) -> Unit,
+    onEditTarget: () -> Unit,
 ) {
     val stats = state.stats ?: return
     val course = state.course ?: return
@@ -165,14 +185,18 @@ private fun CourseDetailContent(
                     if (stats.sessionsAwaitingReview > 0) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "${classes(stats.sessionsAwaitingReview)} still to mark — " +
-                                "they count for nothing until you do.",
+                            text = "${classes(stats.sessionsAwaitingReview)} still to mark. " +
+                                "They count for nothing until you do.",
                             style = MaterialTheme.typography.bodySmall,
                             color = bands.onPending,
                         )
                     }
                 }
             }
+        }
+
+        item {
+            TargetRow(target = course.targetPercent, onEdit = onEditTarget)
         }
 
         if (state.remainingUnits > 0) {
@@ -252,6 +276,85 @@ private fun CourseDetailContent(
             }
         }
     }
+}
+
+/**
+ * This course's own target, and the way to change it.
+ *
+ * A course is judged against its own target rather than the app-wide default — a lab and a
+ * theory paper can reasonably want different numbers, and the figure on the Attendance tab
+ * is a third thing again. Printing the value here rather than only inside the dialog means
+ * the screen always answers "what is this measured against?" without a tap.
+ */
+@Composable
+private fun TargetRow(
+    target: Percent,
+    onEdit: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(text = "Target", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = "What this course is judged against. Not the default for new courses.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = "${target.format(0)}%",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/**
+ * Any whole percentage from 0 to 100, chosen with the same control the rest of the app uses.
+ *
+ * The dialog holds the choice until "Set" rather than writing on each drag, so a student who
+ * opens it, moves the slider to see what a number would mean, and backs out has changed
+ * nothing. [PercentPicker] is what keeps an existing fractional target readable in the
+ * meantime: it shows the exact stored figure and still writes nothing until a whole
+ * percentage is actually picked.
+ */
+@Composable
+private fun TargetDialog(
+    current: Percent,
+    onConfirm: (Percent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var chosen by rememberSaveable { mutableIntStateOf(current.basisPoints) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Target for this course") },
+        text = {
+            Column {
+                Text(
+                    text = "Any whole percentage from 0 to 100. This changes this course " +
+                        "alone — every other course keeps its own target.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                PercentPicker(
+                    value = Percent.ofBasisPoints(chosen),
+                    onSelect = { picked -> chosen = picked.basisPoints },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(Percent.ofBasisPoints(chosen)) }) { Text("Set") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 /**

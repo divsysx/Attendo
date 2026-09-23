@@ -123,8 +123,8 @@ fun DashboardScreen(
             !state.anyCourses -> EmptyState(
                 icon = AttendoIcons.School,
                 title = "No courses yet",
-                body = "Seed them from the faculty timetable — pick your section and your " +
-                    "lab batch — or add them one at a time.",
+                body = "Seed them from the faculty timetable. Pick your section and your " +
+                    "lab batch, or add them one at a time.",
                 action = {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -157,6 +157,7 @@ fun DashboardScreen(
 
     DashboardDialogHost(
         dialog = dialog,
+        today = state.today,
         onDismiss = { dialog = null },
         onMarkBacklogAbsent = viewModel::markBacklogAbsent,
         onCancelBacklog = viewModel::cancelBacklog,
@@ -172,6 +173,7 @@ private sealed interface DashboardDialog {
 @Composable
 private fun DashboardDialogHost(
     dialog: DashboardDialog?,
+    today: LocalDate,
     onDismiss: () -> Unit,
     onMarkBacklogAbsent: () -> Unit,
     onCancelBacklog: (CancellationReason) -> Unit,
@@ -184,9 +186,9 @@ private fun DashboardDialogHost(
             title = { Text("Miss all of them?") },
             text = {
                 Text(
-                    "Every unmarked class from ${dialog.dates.first().shortLabel()} to " +
-                        "${dialog.dates.last().shortLabel()} will be recorded as missed. " +
-                        "They still count as held, so they lower your attendance.\n\n" +
+                    "Every unmarked class ${backlogRangeDialogPhrase(dialog.dates, today)} " +
+                        "will be recorded as missed. They still count as held, so they lower " +
+                        "your attendance.\n\n" +
                         "Classes you have already marked are left alone.",
                 )
             },
@@ -204,9 +206,8 @@ private fun DashboardDialogHost(
         )
 
         is DashboardDialog.CancelBacklog -> CancelReasonDialog(
-            body = "Every unmarked class from ${dialog.dates.first().shortLabel()} to " +
-                "${dialog.dates.last().shortLabel()} stops counting, on both sides " +
-                "of the fraction.\n\n" +
+            body = "Every unmarked class ${backlogRangeDialogPhrase(dialog.dates, today)} " +
+                "stops counting, on both sides of the fraction.\n\n" +
                 "Classes you have already marked are left alone.",
             onPick = { reason ->
                 onCancelBacklog(reason)
@@ -305,7 +306,9 @@ private fun DashboardContent(
             item {
                 BacklogCard(
                     dates = state.backlog,
-                    onOpen = { onOpenDay(state.backlog.first()) },
+                    today = state.today,
+                    // The same date the button's label names — see backlogReviewTarget.
+                    onOpen = { backlogReviewTarget(state.backlog)?.let(onOpenDay) },
                     onMarkAllAbsent = onMarkBacklogAbsent,
                     onOpenBulkCancel = onOpenBulkCancel,
                 )
@@ -345,6 +348,7 @@ private fun DashboardContent(
 @Composable
 private fun BacklogCard(
     dates: List<LocalDate>,
+    today: LocalDate,
     onOpen: () -> Unit,
     onMarkAllAbsent: () -> Unit,
     onOpenBulkCancel: () -> Unit,
@@ -361,10 +365,7 @@ private fun BacklogCard(
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                text = "You have classes from earlier dates that haven't been reviewed " +
-                    "yet — ${dates.first().shortLabel()} to ${dates.last().shortLabel()}. " +
-                    "Unmarked classes count for nothing on either side of the fraction " +
-                    "until you review them.",
+                text = backlogDescription(dates, today),
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(12.dp))
@@ -373,7 +374,7 @@ private fun BacklogCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 FilledTonalButton(onClick = onOpen) {
-                    Text("Review ${dates.first().shortLabel()}")
+                    Text(backlogActionLabel(dates, today))
                     Spacer(Modifier.size(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                 }
@@ -549,3 +550,60 @@ private fun CourseStatsRow(
         }
     }
 }
+
+/**
+ * Pure presentation formatting for the backlog card's headline description.
+ *
+ * Case 1: [today] alone -> "Today's classes are awaiting review."
+ * Case 2: exactly one past date -> "Classes from Fri 18 Sep are awaiting review."
+ * Case 3: multiple past dates -> "Classes from Mon 14 Sep to Fri 18 Sep are awaiting review."
+ * Case 4: past dates through today -> "Classes from Fri 18 Sep to today are awaiting review."
+ * Case 5: empty -> empty string (card is not shown).
+ */
+internal fun backlogDescription(dates: List<LocalDate>, today: LocalDate): String {
+    if (dates.isEmpty()) return ""
+
+    val phrase = when {
+        dates.size == 1 && dates.first() == today -> "Today's classes are"
+        dates.size == 1 -> "Classes from ${dates.first().shortLabel()} are"
+        dates.last() == today -> "Classes from ${dates.first().shortLabel()} to today are"
+        else -> "Classes from ${dates.first().shortLabel()} to ${dates.last().shortLabel()} are"
+    }
+
+    return "$phrase awaiting review. Unmarked classes count for nothing on either " +
+        "side of the fraction until you review them."
+}
+
+/**
+ * The date the backlog card's button opens: the oldest day still waiting for review.
+ *
+ * Its own function because two places need the same answer — the button's *label* names a
+ * date and the button's *navigation* opens one, and a label promising one day while the tap
+ * opens another is a bug that reads correctly in both places. Both now ask this.
+ */
+internal fun backlogReviewTarget(dates: List<LocalDate>): LocalDate? = dates.firstOrNull()
+
+/**
+ * Action button label on the backlog card.
+ *
+ * Names the date [backlogReviewTarget] returns, clearly distinguishing "Review today" from
+ * "Review <Date>".
+ */
+internal fun backlogActionLabel(dates: List<LocalDate>, today: LocalDate): String {
+    val target = backlogReviewTarget(dates) ?: return ""
+    return if (target == today) "Review today" else "Review ${target.shortLabel()}"
+}
+
+/**
+ * Phrasing helper for dialogs describing the range of backlog classes being acted upon.
+ */
+internal fun backlogRangeDialogPhrase(dates: List<LocalDate>, today: LocalDate): String {
+    if (dates.isEmpty()) return ""
+    return when {
+        dates.size == 1 && dates.first() == today -> "from today"
+        dates.size == 1 -> "from ${dates.first().shortLabel()}"
+        dates.last() == today -> "from ${dates.first().shortLabel()} to today"
+        else -> "from ${dates.first().shortLabel()} to ${dates.last().shortLabel()}"
+    }
+}
+

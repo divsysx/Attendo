@@ -5,6 +5,7 @@ import com.attendo.data.db.AttendoDatabase
 import com.attendo.data.db.toModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 
 /**
  * The one place the app reads semesters, and the half of writing them that is non-destructive.
@@ -24,7 +25,10 @@ import kotlinx.coroutines.flow.map
  * remains here is the read of the row and the adoption of courses that predate it, the latter
  * now driven from the same establishing path.
  */
-class SemesterRepository(private val database: AttendoDatabase) {
+class SemesterRepository(
+    private val database: AttendoDatabase,
+    private val now: () -> Instant = Instant::now,
+) {
 
     private val semesterDao = database.semesterDao()
 
@@ -38,5 +42,5 @@ class SemesterRepository(private val database: AttendoDatabase) {
     val current: Flow<Semester?> = semesterDao.observeCurrent().map { it?.toModel() }
 
     suspend fun setArchived(semesterId: Long, archived: Boolean) =
-        semesterDao.setArchived(semesterId, archived)
+        semesterDao.setArchivedOwed(semesterId, archived, now().toEpochMilli())
 }

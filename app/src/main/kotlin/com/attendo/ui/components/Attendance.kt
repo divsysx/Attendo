@@ -154,7 +154,7 @@ fun TargetAdviceLine(
 ) {
     val text = when {
         advice.current == null ->
-            "Target ${advice.target.format(0)}% — nothing held yet"
+            "Target ${advice.target.format(0)}%. Nothing held yet"
         !advice.targetReachable ->
             "A ${advice.target.format(0)}% target can no longer be reached"
         advice.meetsTarget && advice.unitsCanSkip == Int.MAX_VALUE ->

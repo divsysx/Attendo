@@ -26,3 +26,10 @@ build/
 
 # macOS Finder metadata.
 .DS_Store
+
+# Supabase CLI local state — the branch marker and the local stack's runtime
+# secrets (in .temp/start-secrets) are machine/session-specific and must never
+# be committed. The version-controlled parts of supabase/ are config.toml,
+# migrations/ and tests/ only.
+supabase/.branches/
+supabase/.temp/

@@ -41,7 +41,7 @@ class UpdateVerifier(private val context: Context) {
         }.getOrNull() ?: return ApkVerification.NotAnApk
 
         val packageOk = info.packageName
-        val versionCode = info.longVersionCode
+        val versionCode = versionCodeOf(info)
         val signer = signerOf(info)
 
         val digest = sha256Of(apk)
@@ -58,8 +58,21 @@ class UpdateVerifier(private val context: Context) {
     /** This installed build, as the update system's comparison type. */
     fun installed(): AppVersionRef {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
-        return AppVersionRef(name = info.versionName ?: "", code = info.longVersionCode)
+        return AppVersionRef(name = info.versionName ?: "", code = versionCodeOf(info))
     }
+
+    /**
+     * A package's version code as a Long. `getLongVersionCode` is API 28; before it the
+     * int field is the whole truth (and is all a version code that fits in an int ever
+     * was). Same split [signerFlags] makes — minSdk 26 must not crash in the updater.
+     */
+    private fun versionCodeOf(info: PackageInfo): Long =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
 
     /**
      * The flags that make an *archive* parse carry signing information. API 28 grew

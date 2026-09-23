@@ -18,6 +18,18 @@ kotlin {
     jvmToolchain(17)
 }
 
+// The golden backup-fixture suite (docs/backup-format.md §13) lives at the repository
+// root so the future Web implementation can consume the exact same files rather than a
+// copy re-exported from Kotlin. Adding the directory to the test source set's resources
+// puts the files on the classpath as /backup/*, where the tests read them verbatim —
+// never through a Kotlin re-encoding, because a fixture that passed through the
+// implementation under test would pin nothing.
+sourceSets {
+    getByName("test") {
+        resources.srcDir(rootProject.file("fixtures"))
+    }
+}
+
 dependencies {
     implementation(libs.kotlinx.serialization.json)
 

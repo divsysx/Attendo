@@ -1,5 +1,6 @@
 package com.attendo.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -57,6 +58,26 @@ data class CourseEntity(
      * six subjects has nothing to gain from an index to justify that.
      */
     val semesterId: Long? = null,
+    /**
+     * Cloud sync columns (Phase 2). Null on every row until the install links an
+     * account — accountless installs never touch them, and nothing reads them yet.
+     *
+     * `cloudId` is the row's stable identity in `attendance.courses` (a UUID string,
+     * assigned when the row is first pushed). The local autoGenerate `id` is *not*
+     * that identity: a restore renumbers every row, so a Long is only unique inside
+     * one database file.
+     */
+    val cloudId: String? = null,
+    /** When this row was last edited locally — the device clock, in epoch millis. */
+    val clientUpdatedAt: Long? = null,
+    /** Set (epoch millis) when the row is deleted in the cloud sense — a tombstone. */
+    val deletedAt: Long? = null,
+    /**
+     * True when local edits exist that the cloud has not confirmed yet. Carries a SQL
+     * default, not just a Kotlin one: an auto-migration adds a NOT NULL column with
+     * `ALTER TABLE … ADD COLUMN`, which SQLite only allows when a DEFAULT is given.
+     */
+    @ColumnInfo(defaultValue = "0") val dirty: Boolean = false,
 )
 
 /**
@@ -79,6 +100,12 @@ data class SemesterEntity(
     val endDate: LocalDate,
     /** True once the semester has been put away. Its courses and classes are all still here. */
     val archived: Boolean,
+    /** Cloud sync columns (Phase 2) — see [CourseEntity.cloudId] for the shape. */
+    val cloudId: String? = null,
+    val clientUpdatedAt: Long? = null,
+    val deletedAt: Long? = null,
+    /** True when local edits exist that the cloud has not confirmed yet (SQL default 0 — [CourseEntity.dirty]). */
+    @ColumnInfo(defaultValue = "0") val dirty: Boolean = false,
 )
 
 /**
@@ -109,6 +136,12 @@ data class PatternEntity(
     val room: String?,
     val effectiveFrom: LocalDate,
     val effectiveTo: LocalDate?,
+    /** Cloud sync columns (Phase 2) — see [CourseEntity.cloudId] for the shape. */
+    val cloudId: String? = null,
+    val clientUpdatedAt: Long? = null,
+    val deletedAt: Long? = null,
+    /** True when local edits exist that the cloud has not confirmed yet (SQL default 0 — [CourseEntity.dirty]). */
+    @ColumnInfo(defaultValue = "0") val dirty: Boolean = false,
 )
 
 /**
@@ -159,6 +192,12 @@ data class SessionEntity(
     val lastEditedAt: Instant?,
     val movedToSessionId: Long?,
     val movedFromSessionId: Long?,
+    /** Cloud sync columns (Phase 2) — see [CourseEntity.cloudId] for the shape. */
+    val cloudId: String? = null,
+    val clientUpdatedAt: Long? = null,
+    val deletedAt: Long? = null,
+    /** True when local edits exist that the cloud has not confirmed yet (SQL default 0 — [CourseEntity.dirty]). */
+    @ColumnInfo(defaultValue = "0") val dirty: Boolean = false,
 )
 
 // ---- mapping ---------------------------------------------------------------

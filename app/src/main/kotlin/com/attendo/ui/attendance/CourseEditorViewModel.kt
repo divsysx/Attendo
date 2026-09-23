@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.attendo.core.data.TimetableMigration
 import com.attendo.core.model.Course
 import com.attendo.core.model.Percent
 import com.attendo.core.model.SessionKind
@@ -53,6 +54,18 @@ fun SessionPattern.toDraft(): SlotDraft = SlotDraft(
     kind = kind,
     room = room.orEmpty(),
 )
+
+/**
+ * The slots the editor offers to change: the timetable that still runs.
+ *
+ * Removing a slot that has classes behind it retires the pattern rather than deleting it (see
+ * [CourseEditorViewModel.removeSlot]), so the row stays in the database as history. It must
+ * not stay in this list: the row would sit there looking exactly as it did before the remove,
+ * which is how "remove does nothing" reads to whoever pressed the ✕. The course's detail
+ * screen still shows retired slots, with the date each one stopped.
+ */
+internal fun editableSlots(patterns: List<SessionPattern>): List<SlotDraft> =
+    patterns.filter { it.effectiveTo == null }.map { it.toDraft() }
 
 data class CourseEditorUiState(
     val loaded: Boolean = false,
@@ -120,7 +133,7 @@ class CourseEditorViewModel(
         val slots = if (isNew) {
             pendingSlots
         } else {
-            patterns.map { it.toDraft() }
+            editableSlots(patterns)
         }
         CourseEditorUiState(
             loaded = isLoaded,
@@ -151,7 +164,7 @@ class CourseEditorViewModel(
         viewModelScope.launch {
             if (isNew) {
                 val newId = attendance.addCourse(current.toCourse(id = Routes.NEW))
-                pending.value.forEach { draft -> attendance.addPattern(draft.toPattern(newId)) }
+                pending.value.forEach { draft -> attendance.addPattern(draft.toPattern(newId, current.code)) }
                 pending.value = emptyList()
             } else {
                 val existing = attendance.course(courseId).first() ?: return@launch
@@ -177,7 +190,7 @@ class CourseEditorViewModel(
             pending.update { it + draft.copy(patternId = -(it.size + 1).toLong()) }
             return
         }
-        viewModelScope.launch { attendance.addPattern(draft.toPattern(courseId)) }
+        viewModelScope.launch { attendance.addPattern(draft.toPattern(courseId, edits.value.code)) }
     }
 
     /**
@@ -199,7 +212,7 @@ class CourseEditorViewModel(
         }
         viewModelScope.launch {
             val old = patternById(draft.patternId) ?: return@launch
-            val replacement = draft.toPattern(courseId)
+            val replacement = draft.toPattern(courseId, edits.value.code)
             if (hasHistory(old.id)) {
                 attendance.replacePattern(old, replacement.copy(id = 0L), clock())
             } else {
@@ -251,15 +264,34 @@ class CourseEditorViewModel(
         archived = archived,
     )
 
-    private fun SlotDraft.toPattern(forCourseId: Long): SessionPattern = SessionPattern(
-        courseId = forCourseId,
-        dayOfWeek = dayOfWeek,
-        startHour = startHour,
-        units = units,
-        kind = kind,
-        room = room.trim().ifBlank { null },
-        effectiveFrom = settings.current.calendar.termStart,
-    )
+    /**
+     * A new slot, dated by the edition rather than by the clock.
+     *
+     * The term start for anything the July grid taught — which is almost everything, including a
+     * course a student adds by hand in September, because adding a course late does not mean it
+     * was not being taught in July. The subjects the 17 September edition introduces are the one
+     * exception: the July grid never printed them, so a pattern for one dated from July would
+     * have the generator produce weeks of classes nobody taught. [TimetableMigration] holds that
+     * set and decides; the current date is not consulted, so a September edit of an old course
+     * cannot move its start.
+     *
+     * The edit paths that rewrite an *existing* slot do not come through here — they either
+     * reuse the old pattern's own dates or let the repository floor the replacement at the day
+     * after the last one it replaced.
+     */
+    private fun SlotDraft.toPattern(forCourseId: Long, courseCode: String): SessionPattern =
+        SessionPattern(
+            courseId = forCourseId,
+            dayOfWeek = dayOfWeek,
+            startHour = startHour,
+            units = units,
+            kind = kind,
+            room = room.trim().ifBlank { null },
+            effectiveFrom = TimetableMigration.effectiveFromFor(
+                code = courseCode,
+                termStart = settings.current.calendar.termStart,
+            ),
+        )
 
     private data class Edits(
         val name: String = "",

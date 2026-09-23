@@ -14,6 +14,13 @@
   rides along for the same reason — a look is a choice too.
 -->
 <full-backup-content>
+    <!-- The community identity file (attendo-community.xml) is deliberately NOT
+         listed here, in either direction: an anonymous-auth session token restored
+         onto a second device would make one student two reporters. The rules are
+         include-lists, so an unlisted file is already excluded — this comment is the
+         record that the omission is the security decision, not an oversight. The
+         community Room tables ride inside attendo.db and are harmless: cache and
+         pending outbox rows, both keyed to a fresh identity after any restore. -->
     <include domain="database" path="attendo.db" />
     <include domain="database" path="attendo.db-wal" />
     <include domain="sharedpref" path="attendo-settings.xml" />

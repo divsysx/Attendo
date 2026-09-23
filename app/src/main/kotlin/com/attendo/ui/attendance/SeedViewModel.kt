@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.attendo.core.data.SeedPlan
 import com.attendo.core.data.SeedProposal
 import com.attendo.core.data.SectionSeeder
+import com.attendo.core.data.TimetableMigration
 import com.attendo.core.engine.RoomAvailability
 import com.attendo.data.AttendanceRepository
 import com.attendo.data.SettingsStore
@@ -87,14 +88,23 @@ class SeedViewModel(
 
         val sections = RoomAvailability.sections(loadedTimetable.bookings)
         val tracked = courses.mapTo(mutableSetOf()) { it.code }
+        val calendar = settings.current.calendar
         val plan = current.section?.let { section ->
             SectionSeeder.plan(
                 bookings = loadedTimetable.bookings,
                 section = section,
-                termStart = settings.current.calendar.termStart,
+                // The term start, because nearly everything this screen offers is a course that
+                // has been running since July and must keep the history it has. The exception is
+                // the handful of subjects the 17 September edition introduces, which the July
+                // grid never taught — `startFor` dates those from the edition instead. The rule
+                // is the edition's, not this screen's: see [TimetableMigration.INTRODUCED]. Six
+                // weeks of classes for a paper nobody taught would arrive as review work and
+                // become absences the moment they were marked.
+                termStart = calendar.termStart,
                 batch = current.batch,
                 subjects = loadedTimetable.subjects,
                 defaultTarget = settings.current.courseTarget,
+                startFor = { code -> TimetableMigration.effectiveFromFor(code, calendar.termStart) },
             )
         }
 
@@ -151,7 +161,7 @@ class SeedViewModel(
         viewModelScope.launch {
             val count = attendance.applySeed(chosen)
             settings.setSection(current.section, current.batch)
-            attendance.syncSessions(settings.current.calendar, clock())
+            attendance.syncSessions(settings.current.effectiveCalendar, clock())
             created.value = count
         }
     }

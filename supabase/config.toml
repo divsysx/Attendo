@@ -1,0 +1,71 @@
+# Attendo community backend — local development configuration.
+#
+# This file is version-controlled and contains NO secrets. The project URL and
+# publishable client key live in local.properties (git-ignored) and are read by
+# the Android build; this file only configures the local development stack that
+# `supabase start` boots.
+project_id = "attendo-community"
+
+[api]
+enabled = true
+port = 54321
+# `attendance` is exposed so the local stack offers the same PostgREST surface
+# that production already serves: the Attendance Sync backend (migration 0020)
+# is reached with `Accept-Profile`/`Content-Profile: attendance`, exactly as the
+# community client already does for its own schema. Without this, local REST
+# answers PGRST106 (invalid schema) for all five attendance tables.
+# `storage` is the CLI's own local-stack default and is deliberately retained:
+# no application code or test uses Supabase Storage, but nothing establishes it
+# as incorrect, and local-only services are not removed merely to make this list
+# match production's.
+schemas = ["public", "storage", "graphql_public", "community", "attendance"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 200
+
+[studio]
+enabled = true
+port = 54323
+
+# Anonymous sign-ins are the community identity mechanism: a silent
+# signInAnonymously() on first community interaction, no PII, no login wall.
+# enable_anonymous_sign_ins = true  # NOTE: this key is not valid in older CLI
+# config schemas; the equivalent is set below via [auth] defaults. The CLI
+# writes the current schema on first `supabase start`; we leave auth config to
+# CLI defaults and enable anonymous sign-ins explicitly in a migration-side
+# check plus the dashboard when the production project is linked (Phase 6).
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = true
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = false
+
+[realtime]
+enabled = true
+
+# Realtime is an enhancement, never a dependency: the Android client treats the
+# snapshot/reconciliation REST path as the source of correctness and uses
+# lifecycle-scoped, filtered channels only while a relevant screen is visible.
+
+[analytics]
+enabled = false

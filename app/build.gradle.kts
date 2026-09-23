@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // The community DTOs are @Serializable classes; until now the app module only
+    // *ran* the JSON library (decoding maps), which the runtime jar alone could do.
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     // Processes app/google-services.json — the Firebase config downloaded from the console —
     // into build resources. Without it the Firebase SDK initialises with no project and
@@ -29,6 +32,18 @@ fun releaseSigningProperty(key: String): String =
                 "keyAlias, keyPassword."
         )
 
+// The community feature's Supabase endpoint. Both values live in local.properties —
+// git-ignored, never in source — and are baked into BuildConfig at configuration time.
+// A checkout without them still builds: the fields fall back to empty strings and the
+// community client reports itself unavailable at runtime, leaving attendance untouched
+// (see CommunitySupabaseConfig).
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+val supabaseUrl = localProperties.getProperty("SUPABASE_URL").takeIf { !it.isNullOrBlank() } ?: ""
+val supabasePublishableKey =
+    localProperties.getProperty("SUPABASE_PUBLISHABLE_KEY").takeIf { !it.isNullOrBlank() } ?: ""
+
 android {
     namespace = "com.attendo"
     compileSdk = 35
@@ -40,8 +55,11 @@ android {
         // machinery to support phones this app is unlikely to run on.
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"$supabasePublishableKey\"")
     }
 
     signingConfigs {
@@ -92,10 +110,21 @@ android {
 
     buildFeatures {
         compose = true
+        // The community feature reads its endpoint from BuildConfig fields above.
+        buildConfig = true
     }
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    }
+
+    testOptions {
+        unitTests {
+            // Robolectric inflates nothing here, but Room's generated code and the
+            // `androidx.test` Context both need the merged resources on the unit-test
+            // classpath rather than the stubbed `android.jar` alone.
+            isIncludeAndroidResources = true
+        }
     }
 }
 
@@ -154,5 +183,21 @@ dependencies {
     // JSON; the codec is the same one :core's backup format uses.
     implementation(libs.kotlinx.serialization.json)
 
+    // Community: the Supabase client and its WebSocket-capable engine. The BOM pins the
+    // module versions; the publishable key only — the service-role/secret key never
+    // exists in this app. Realtime requires an engine with WebSocket capability, which is
+    // why OkHttp joins HttpURLConnection (the update system's client, untouched).
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.realtime)
+    implementation(libs.ktor.client.okhttp)
+
     testImplementation(libs.junit)
+    // Attendance Sync's regression tests open the real database — see the catalog comment on
+    // the version. `room-testing` is what lets a schema created by the production
+    // `AttendoDatabase` be opened in memory with its migrations and indexes intact.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
 }

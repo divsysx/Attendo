@@ -6,6 +6,7 @@ import com.attendo.core.model.AcademicCalendar
 import com.attendo.core.model.AttendanceBasis
 import com.attendo.core.model.AttendanceStart
 import com.attendo.core.model.Percent
+import com.attendo.core.model.RecurringSaturdays
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,6 +51,26 @@ data class AppSettings(
     /** "Hi, Divyansh" once a name is set; plain "Hi" until then. */
     val greeting: String
         get() = displayName?.trim()?.takeIf { it.isNotEmpty() }?.let { "Hi, $it" } ?: "Hi"
+
+    /**
+     * The calendar as it applies to this install, which is not always the stored one.
+     *
+     * A section the timetable teaches on Saturday every week gets every Saturday in the term
+     * treated as a working day — see [RecurringSaturdays]. Deriving it here rather than
+     * writing the dates into [calendar] keeps the stored calendar meaning one thing ("what
+     * the student configured") and means the derivation follows a term-date change for free.
+     *
+     * Anything that decides whether a class happens — generating sessions, correcting them
+     * after a term change, counting the days left in the term — reads this. Anything that
+     * *edits* the calendar reads [calendar], so a working Saturday the student ticked is
+     * still shown as ticked.
+     */
+    val effectiveCalendar: AcademicCalendar
+        get() = if (RecurringSaturdays.appliesTo(section)) {
+            calendar.withEverySaturdayWorking()
+        } else {
+            calendar
+        }
 }
 
 /**

@@ -44,6 +44,7 @@ import com.attendo.ui.components.AttendanceBar
 import com.attendo.ui.components.AttendoTopBar
 import com.attendo.ui.components.ConfirmDialog
 import com.attendo.ui.components.EmptyState
+import com.attendo.ui.components.LoadingPane
 import com.attendo.ui.components.SectionLabel
 import com.attendo.ui.display
 import com.attendo.ui.hours
@@ -79,8 +80,13 @@ fun CoursesScreen(
                 },
             )
 
-            if (state.isEmpty) {
-                EmptyState(
+            // Loading first, always: the empty state answers "no courses", which is
+            // only known once the lists have loaded. Rendering it on the initial
+            // state flashed "Seed from timetable" at students who already had courses.
+            when {
+                !state.loaded -> LoadingPane()
+
+                state.isEmpty -> EmptyState(
                     icon = AttendoIcons.School,
                     title = "Nothing tracked yet",
                     body = "Pull your subjects out of the faculty timetable, or add them one " +
@@ -95,8 +101,8 @@ fun CoursesScreen(
                         }
                     },
                 )
-            } else {
-                LazyColumn(
+
+                else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 16.dp,

@@ -6,8 +6,11 @@ import com.attendo.core.model.Semester
 import com.attendo.core.rollover.SemesterRecordDoc
 import com.attendo.core.rollover.SemesterRecordRenderer
 import com.attendo.data.db.AttendoDatabase
+import com.attendo.data.db.SemesterEntity
 import com.attendo.data.db.toEntity
 import com.attendo.data.db.toModel
+import com.attendo.data.sync.AttendanceSyncStore
+import java.time.Instant
 import java.time.LocalDate
 
 /**
@@ -68,12 +71,29 @@ class RolloverRepository(
     private val settings: SettingsStore,
     private val attendance: AttendanceRepository,
     private val clock: () -> LocalDate = LocalDate::now,
+    private val now: () -> Instant = Instant::now,
 ) {
 
     private val courseDao = database.courseDao()
     private val patternDao = database.patternDao()
     private val sessionDao = database.sessionDao()
     private val semesterDao = database.semesterDao()
+
+    /**
+     * Stamps a freshly established semester as something the cloud has not been told about.
+     *
+     * The two columns are the outbox: `clientUpdatedAt` is what decides which device's copy of
+     * this term wins, and `dirty` is what an incremental push reads once this account's initial
+     * push is done. A semester inserted with neither is a row the sync can never see — the
+     * student's new term would exist on one phone and nowhere else, and the second phone would
+     * refuse the pull with a uniqueness violation instead of adopting it. See
+     * [com.attendo.data.sync.AttendanceSyncStore.applySemesters].
+     *
+     * `cloudId` is deliberately left null: identity is assigned at the first push, which is the
+     * same rule every other attendance row follows.
+     */
+    private fun SemesterEntity.owed(at: Instant): SemesterEntity =
+        copy(clientUpdatedAt = at.toEpochMilli(), dirty = true)
 
     // ---- establishing the first semester ------------------------------------
 
@@ -95,7 +115,7 @@ class RolloverRepository(
         val established = if (existing != null && existing.isSameTermAs(bundled)) {
             existing
         } else {
-            val id = semesterDao.insert(bundled.copy(id = 0L, archived = false).toEntity())
+            val id = semesterDao.insert(bundled.copy(id = 0L, archived = false).toEntity().owed(now()))
             bundled.copy(id = id, archived = false)
         }
         courseDao.adoptOrphans(established.id)
@@ -156,6 +176,21 @@ class RolloverRepository(
 
         val failure = runCatching {
             database.withTransaction {
+                // Read first, delete second. A `DELETE` cannot report what it removed, and every
+                // one of these rows has a cloud id — so without the read the cloud keeps the whole
+                // previous term, and the next pull (or a second phone, or the web client) brings
+                // it back beside the new one. The student would have two of every course and a
+                // history that counted last term twice.
+                attendance.recordRemoval(
+                    AttendanceSyncStore.DeletedRows(
+                        semesters = semesterDao.all(),
+                        courses = courseDao.all(),
+                        patterns = patternDao.all(),
+                        sessions = sessionDao.all(),
+                    ),
+                    now(),
+                )
+
                 // Semesters last on the way out, first on the way in: courses reference them, and
                 // the order here is the only thing enforcing that — see CourseEntity.semesterId,
                 // deliberately not a foreign key so a cascade can never wipe a term's history.
@@ -164,7 +199,7 @@ class RolloverRepository(
                 courseDao.deleteAll()
                 semesterDao.deleteAll()
 
-                semesterDao.insert(bundled.copy(id = 0L, archived = false).toEntity())
+                semesterDao.insert(bundled.copy(id = 0L, archived = false).toEntity().owed(now()))
 
                 // Read back inside the transaction so a mismatch can still be undone by throwing.
                 val active = semesterDao.current()?.toModel()
@@ -219,7 +254,7 @@ class RolloverRepository(
         // Idempotent backfill: the new term has no patterns yet (they were cleared), so this is a
         // no-op until the student re-seeds — but running it mirrors a restore, so the new semester
         // starts in the same state a fresh install would.
-        attendance.syncSessions(settings.current.calendar, clock())
+        attendance.syncSessions(settings.current.effectiveCalendar, clock())
 
         return RolloverResult.Done
     }

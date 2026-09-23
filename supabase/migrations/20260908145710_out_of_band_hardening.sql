@@ -1,0 +1,12 @@
+-- Applied out-of-band on 2026-09-08, during the community reporting hardening
+-- (the session that PRODUCTION_VERIFICATION.md's §0 rows record). The work it
+-- carried is the local migrations 0008–0014, which were applied to production
+-- through the dashboard SQL editor and pushed under this one timestamped entry
+-- before being organised into numbered files locally.
+--
+-- This file is bookkeeping only: production's migration history already records
+-- 20260908145710 as applied, so it never runs — locally or remotely. Its
+-- statements are deliberately absent. The schema it produced was re-verified
+-- before 0015/0016 were pushed: the §0.3 RPC allow-list, the community table
+-- set, and fresh_undo_window() = 30 seconds all matched the local 0008–0014
+-- state exactly.

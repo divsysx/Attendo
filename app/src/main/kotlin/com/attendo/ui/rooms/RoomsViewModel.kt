@@ -10,6 +10,8 @@ import com.attendo.core.engine.RoomAvailability
 import com.attendo.core.engine.RoomStatus
 import com.attendo.core.engine.SlotQuery
 import com.attendo.core.engine.currentSlot
+import com.attendo.core.engine.isNonTeachingDay
+import com.attendo.core.engine.queriedDate
 import com.attendo.data.SettingsStore
 import com.attendo.data.Timetable
 import com.attendo.data.TimetableRepository
@@ -37,6 +39,16 @@ data class RoomsUiState(
     val query: SlotQuery? = null,
     /** True when [query] is the slot the clock is in, so the lists mean "right now". */
     val isLive: Boolean = false,
+    /**
+     * True when no slot was picked, so the view means *now* even when the clock is outside
+     * the teaching hours — a Sunday afternoon or 8 PM still has a right-now answer, it is
+     * just not a live slot. [isLive] is false on those views (there is no slot to be in),
+     * which is why anything that means "this is the present view" must read this field:
+     * the "Back to now" affordance belongs only to a view the student navigated away
+     * from now, and present-tense overlays (rendered by the screens, not computed here)
+     * belong to any view that *is* now, holiday or not.
+     */
+    val isRightNow: Boolean = false,
     val free: List<RoomStatus> = emptyList(),
     val busy: List<RoomStatus> = emptyList(),
     val filter: String = "",
@@ -44,15 +56,18 @@ data class RoomsUiState(
     val roomCount: Int = 0,
     val subjects: Glossary = Glossary.EMPTY,
     /**
-     * True only on the right-now view, when today is not a teaching day — a Sunday, a holiday,
-     * or a Saturday that is not a working one. The grid still shows (the day/hour chips let a
-     * student plan ahead), but the free/busy lists are replaced by an empty state naming why.
-     * Never set when the student has manually picked a slot: that is them asking about a day,
-     * not the app telling them about today.
+     * True when the day this query is about is not a teaching day — a Sunday, a holiday, a
+     * Saturday that is not a working one, or any date outside the term. The chips stay (a
+     * student can still pick a teaching day to plan ahead), but the free/busy lists are
+     * replaced by an empty state naming why. This holds for *every* query, live or picked:
+     * tapping an hour chip on a holiday is still asking about that holiday, and the weekly
+     * grid's "no bookings today" must never read as "every room free".
      */
-    val isNonTeachingToday: Boolean = false,
-    /** Why today is not a teaching day, when [isNonTeachingToday] holds; empty otherwise. */
-    val notTodayReason: String = "",
+    val isNonTeachingDay: Boolean = false,
+    /** Why the queried day is not a teaching day, when [isNonTeachingDay] holds; empty otherwise. */
+    val nonTeachingReason: String = "",
+    /** The calendar date the current query is about — drives the empty state's copy. */
+    val queryDate: java.time.LocalDate? = null,
 ) {
     val matchCount: Int get() = free.size + busy.size
 
@@ -161,25 +176,30 @@ class RoomsViewModel(
 
             // Trimmed once rather than inside the match, which ran it per room.
             val trimmed = needle.trim()
-            // The right-now view only: when no slot was picked, today's grid is what is on
-            // screen, so a non-teaching today is worth saying out loud. A student who tapped a
-            // day chip is asking about that day, not today — the empty state stays out of the way.
-            val now = clock().toLocalDate()
-            val calendar = appSettings.calendar
-            val nonTeaching = slot.isRightNow && !calendar.isTeachingDay(now)
+            // The calendar decides for the day the query is *about* — today on the live
+            // view, otherwise the next occurrence of the picked day-of-week. Never gated
+            // on isRightNow: a picked hour on a holiday was exactly the path that used to
+            // turn "no classes today" into "every room free" (the weekly grid has no
+            // bookings on a non-teaching day, and absence of bookings read as freedom).
+            val now = clock()
+            val calendar = appSettings.effectiveCalendar
+            val nonTeaching = isNonTeachingDay(now, calendar, slot.query, slot.isRightNow)
+            val queried = queriedDate(now, slot.query, slot.isRightNow)
             RoomsUiState(
                 loaded = true,
                 hasTimetable = slot.hasTimetable,
                 days = slot.days,
                 query = slot.query,
                 isLive = slot.isLive,
+                isRightNow = slot.isRightNow,
                 free = slot.free.matching(trimmed),
                 busy = slot.busy.matching(trimmed),
                 filter = needle,
                 roomCount = slot.roomCount,
                 subjects = slot.subjects,
-                isNonTeachingToday = nonTeaching,
-                notTodayReason = if (nonTeaching) calendar.notTeachingReason(now) else "",
+                isNonTeachingDay = nonTeaching,
+                nonTeachingReason = if (nonTeaching) calendar.notTeachingReason(queried) else "",
+                queryDate = queried,
             )
         }
         .flowOn(Dispatchers.Default)

@@ -2,6 +2,7 @@ package com.attendo.core.model
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 
 /**
  * The teaching calendar for one semester: when it runs, and which days are
@@ -46,6 +47,29 @@ data class AcademicCalendar(
             .filter(::isTeachingDay)
             .toList()
     }
+
+    /** Every Saturday the term contains, in order — the working-Saturday picker's options. */
+    fun saturdaysInTerm(): List<LocalDate> {
+        val first = termStart.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
+        return generateSequence(first) { it.plusWeeks(1) }
+            .takeWhile { !it.isAfter(termEnd) }
+            .toList()
+    }
+
+    /**
+     * The same calendar with every Saturday in the term promoted to a working day.
+     *
+     * This is how a section that is timetabled on Saturday every week is expressed without
+     * a second calendar, a new stored field, or a change to what the account syncs: the
+     * dates are derived from [termStart] and [termEnd] instead of being written down, so
+     * moving the term moves them and nothing can go stale.
+     *
+     * It is the *derived* calendar, never the stored one — see [RecurringSaturdays] for
+     * which sections get it, and note that a holiday still wins over it, because
+     * [isWorkingDay] checks [holidays] before it looks at the day of the week.
+     */
+    fun withEverySaturdayWorking(): AcademicCalendar =
+        copy(workingSaturdays = workingSaturdays + saturdaysInTerm())
 
     companion object {
         /**

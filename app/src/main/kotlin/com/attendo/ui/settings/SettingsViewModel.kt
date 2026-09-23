@@ -10,6 +10,7 @@ import com.attendo.core.model.AcademicCalendar
 import com.attendo.core.model.AttendanceBasis
 import com.attendo.core.model.AttendanceStart
 import com.attendo.core.model.Percent
+import com.attendo.core.model.RecurringSaturdays
 import com.attendo.core.update.UpdateCheckOutcome
 import com.attendo.core.update.UpdateManifest
 import com.attendo.data.AppSettings
@@ -52,9 +53,26 @@ data class SettingsUiState(
 ) {
     val calendar: AcademicCalendar get() = settings.calendar
 
+    /**
+     * Whether this student's section is timetabled on Saturday every week.
+     *
+     * Read by Settings to decide whether the Working Saturdays row exists at all: for these
+     * sections there is nothing to configure, so offering a list of Saturdays would be
+     * offering a control the app then ignores.
+     */
+    val saturdayIsRecurring: Boolean get() = RecurringSaturdays.appliesTo(settings.section)
+
     val holidays: List<LocalDate> get() = calendar.holidays.sorted()
 
     val workingSaturdays: List<LocalDate> get() = calendar.workingSaturdays.sorted()
+
+    /** "5 configured" / "None" — the whole of what Settings says about holidays. */
+    val holidaysSummary: String get() = countLabel(holidays.size)
+
+    val workingSaturdaysSummary: String get() = countLabel(workingSaturdays.size)
+
+    /** "Default: 75%" — the default for new courses, not the overall threshold. */
+    val targetsSummary: String get() = "Default: ${settings.courseTarget.format(0)}%"
 
     val sectionLabel: String get() = listOfNotNull(settings.section, settings.batch)
         .joinToString(" · ")
@@ -77,6 +95,13 @@ data class SettingsUiState(
 
     /** "Version 1.0" — never joined to the product name. */
     val versionLabel: String get() = "Version ${version.name.ifBlank { "unknown" }}"
+
+    /** "None" for an empty list, "1 configured" for one — never "0 configured". */
+    private fun countLabel(count: Int): String = when (count) {
+        0 -> "None"
+        1 -> "1 configured"
+        else -> "$count configured"
+    }
 }
 
 /**
@@ -152,13 +177,19 @@ class SettingsViewModel(
     ) { appSettings, importProblems, courses, sessions, panel ->
         val today = clock()
         val calendar = appSettings.calendar
+        // The teaching-day counts read the *effective* calendar, not the stored one: a
+        // section the timetable teaches on Saturday has every Saturday counted, whether or
+        // not anyone ticked them off. The rest of the state keeps the stored calendar,
+        // because that is what the term-date rows and the Saturday picker are editing.
+        val effective = appSettings.effectiveCalendar
         SettingsUiState(
             loaded = true,
             settings = appSettings,
             today = today,
-            teachingDays = calendar.teachingDaysBetween(calendar.termStart, calendar.termEnd).size,
-            teachingDaysSoFar = calendar
-                .teachingDaysBetween(calendar.termStart, minOf(today, calendar.termEnd))
+            teachingDays = effective
+                .teachingDaysBetween(effective.termStart, effective.termEnd).size,
+            teachingDaysSoFar = effective
+                .teachingDaysBetween(effective.termStart, minOf(today, effective.termEnd))
                 .size,
             courseCount = courses.count { !it.archived },
             markedSessions = sessions.count { !it.isAwaitingReview },
@@ -174,6 +205,19 @@ class SettingsViewModel(
 
     /** Applies to courses created from here on; existing ones keep their own target. */
     fun setCourseTarget(target: Percent) = settings.setCourseTarget(target)
+
+    /**
+     * "Apply to all active courses", already confirmed by the student.
+     *
+     * The only way one target reaches many courses. Changing the default deliberately does
+     * *not* do this — a student who moves the default from 75% to 80% is saying what they
+     * want next term, not silently re-judging a term already under way. Archived courses are
+     * excluded by the repository, not by a filter here, so the same exclusion holds for any
+     * other caller.
+     */
+    fun applyTargetToAllActiveCourses(target: Percent) {
+        viewModelScope.launch { attendance.setTargetForActiveCourses(target) }
+    }
 
     fun setTermStart(date: LocalDate) {
         settings.setTermDates(date, settings.current.calendar.termEnd)
@@ -196,7 +240,7 @@ class SettingsViewModel(
         settings.toggleHoliday(date)
         viewModelScope.launch {
             attendance.restoreHoliday(date)
-            attendance.syncSessions(settings.current.calendar, clock())
+            attendance.syncSessions(settings.current.effectiveCalendar, clock())
         }
     }
 
@@ -205,7 +249,7 @@ class SettingsViewModel(
         settings.toggleWorkingSaturday(date)
         viewModelScope.launch {
             attendance.restoreHoliday(date)
-            attendance.syncSessions(settings.current.calendar, clock())
+            attendance.syncSessions(settings.current.effectiveCalendar, clock())
         }
     }
 
@@ -290,7 +334,7 @@ class SettingsViewModel(
 
     private fun resync() {
         viewModelScope.launch {
-            attendance.syncSessions(settings.current.calendar, clock())
+            attendance.syncSessions(settings.current.effectiveCalendar, clock())
         }
     }
 

@@ -1,0 +1,47 @@
+{
+  "formatVersion": 2,
+  "app": {
+    "name": "Attendo",
+    "versionName": "1.1",
+    "versionCode": 2
+  },
+  "exportedAt": "2026-09-12T09:30:00Z",
+  "checksum": {
+    "algorithm": "SHA-256",
+    "value": "ea74975a5b218d5aec7537cad9f1e82f99c693f50dbbff18102524fccc355aad"
+  },
+  "payload": {
+    "preferences": {
+      "overallTargetBasisPoints": 7500,
+      "courseTargetBasisPoints": 7500
+    },
+    "calendar": {
+      "termStart": "2026-07-28",
+      "termEnd": "2026-12-15",
+      "holidays": [],
+      "workingSaturdays": []
+    },
+    "semesters": [
+      {
+        "ref": "m1",
+        "year": 2026,
+        "type": "ODD",
+        "startDate": "2026-07-28",
+        "endDate": "2026-12-15",
+        "archived": false
+      }
+    ],
+    "courses": [
+      {
+        "ref": "c1",
+        "name": "Digital Electronics",
+        "code": "EC-204",
+        "targetBasisPoints": 7500,
+        "colorArgb": 0,
+        "archived": true
+      }
+    ],
+    "patterns": [],
+    "sessions": []
+  }
+}

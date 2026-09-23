@@ -1,12 +1,18 @@
 # Faculty acronyms — Faculty of Technology, University of Delhi (2026-27)
 # code,name
-# Collected from the per-page keys of Timetable.pdf. A cell like "[AKT / SG]" names two
-# teachers; the timetable CSV keeps the pair as printed and this file resolves each half.
+# Collected from the per-page keys of the 17 September 2026 timetable. A cell like
+# "[AKT / SG]" names two teachers; the timetable CSV keeps the pair as printed and this
+# file resolves each half.
+#
+# ANK and SMT are printed in the grid but expanded in no page's key, so they stand for
+# themselves here rather than being guessed at.
 code,name
+AK,Dr. Amit Kumar
 AKG,Dr. Ajay Kumar Gupta
 AKS,Mr. Ajay Kumar Sahu
 AKT,Prof. A.K. Tandon
 ANJ,Dr. Anuj
+ANK,ANK
 AP,Dr. Ashutosh Pandey
 ART,Dr. Anuradha Tomar
 AT,Dr. Arjun Tyagi
@@ -24,20 +30,27 @@ JJ,Dr. Juhi Jain
 JP,Dr. Jeetendra Prasad
 JS,Dr. Jatin Sharma
 KJ,Dr. Kajal Kumari
+KJL,Dr. Kajol
 KS,Dr. Khushwant Sehra
+MS,Ms. Manisha Singh
 MV,Dr. Manu Vardhan
 PKS,Prof. P.K. Singh
 PT,Dr. Pratima
+RH,Ms. Reha
 RHS,Dr. Rahul Solanki
 RJS,Dr. Ranjeet Singh
 RR,Dr. Rekha R
 RS,Prof. Raj Senani
+RTS,Ms. Ritika Sharma
 SG,Dr. Shubham Gupta
 SJY,Dr. Sanjeev Yadav
 SK,Dr. Sunil Kumar
+SMT,SMT
 SNK,Ms. Shivani Kumari
 SW,Dr. Sweta Rani
 SY,Dr. Sangeeta Yadav
+TK,Ms. Tanya Khaneja
+TNK,Ms. Tanishka
 UDS,Dr. Udita Sharma
 UJS,Dr. Ujjal Sur
 UK,Dr. Utkarsh
@@ -45,4 +58,5 @@ US,Mr. Unmesh Shukla
 VA,Dr. Vijay Azad
 VJ,Prof. Vanita Jain
 VK,Dr. Vandana Kumari
+VKG,Dr. Vikram Kumar Gedi
 VS,Dr. Varun Saxena

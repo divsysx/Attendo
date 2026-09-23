@@ -70,7 +70,7 @@ data class DashboardUiState(
                 "${semester?.label ?: "All courses"} · counted ${window.label}"
 
             semester != null -> null
-            else -> "No semester set up yet — counting every course you have."
+            else -> "No semester set up yet, so every course you have is counted."
         }
 }
 
@@ -154,7 +154,7 @@ class DashboardViewModel(
                 date = today,
                 patterns = patterns.filter { it.courseId in activeIds },
                 existing = ownSessions,
-                calendar = appSettings.calendar,
+                calendar = appSettings.effectiveCalendar,
             ),
             anyCourses = courses.isNotEmpty(),
             courseById = courses.associateBy { it.id },
@@ -168,14 +168,14 @@ class DashboardViewModel(
         // only place it is called from, so the sessions table catches up with the timetable
         // the moment the app is opened, however many days have been missed.
         viewModelScope.launch {
-            attendance.syncSessions(settings.current.calendar, clock().toLocalDate())
+            attendance.syncSessions(settings.current.effectiveCalendar, clock().toLocalDate())
         }
     }
 
     /** The one-tap path: everything today, marked fully attended. */
     fun approveToday() {
         viewModelScope.launch {
-            attendance.approveDay(clock().toLocalDate(), settings.current.calendar)
+            attendance.approveDay(clock().toLocalDate(), settings.current.effectiveCalendar)
         }
     }
 
@@ -193,7 +193,7 @@ class DashboardViewModel(
         val dates = state.value.backlog
         if (dates.isEmpty()) return
         viewModelScope.launch {
-            attendance.markBacklogAbsent(dates.first(), dates.last(), settings.current.calendar, clock())
+            attendance.markBacklogAbsent(dates.first(), dates.last(), settings.current.effectiveCalendar, clock())
         }
     }
 
@@ -202,7 +202,7 @@ class DashboardViewModel(
         val dates = state.value.backlog
         if (dates.isEmpty()) return
         viewModelScope.launch {
-            attendance.cancelBacklog(dates.first(), dates.last(), reason, settings.current.calendar, clock())
+            attendance.cancelBacklog(dates.first(), dates.last(), reason, settings.current.effectiveCalendar, clock())
         }
     }
 

@@ -7,8 +7,15 @@
       whether a newer build exists and, when the student asks for it, downloads that
       release's APK. Analytics reaches Firebase's servers. Nothing a student records is
       ever sent over either — see UsageAnalytics for the boundary.
+
+      The community feature adds Supabase (reports, polls, realtime) under the same
+      rule: room and class observations travel as context plus counts, never as
+      identity. ACCESS_NETWORK_STATE lets the community sync engine notice
+      connectivity returning so a pending offline report sends itself without the
+      student reopening anything.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!--
       Android 8+ gates "install an APK from outside a store" behind a per-app switch;
@@ -68,15 +75,30 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Attendo">
 
+        <!--
+          singleTask so the OAuth callback comes back to the ONE running instance
+          (onNewIntent) instead of stacking a second MainActivity on top of the app.
+          The intent-filter below is the whole reason the browser can return at all:
+          it declares com.attendo://login-callback — the redirect URL GitHub sign-in
+          sends the student back to, allow-listed in the Supabase dashboard. Nothing
+          else in the app uses deep links.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.Attendo"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.attendo" android:host="login-callback" />
             </intent-filter>
         </activity>
 

@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
-/** Where feedback emails go. No backend, no account — just the mail app the student already has. */
+/** Where feedback emails go. No feedback backend — just the mail app the student already has. */
 private const val FEEDBACK_EMAIL = "divyanshssharma1@gmail.com"
 
 /** The repo's issue tracker, offered as the alternative to writing an email. */
@@ -28,9 +28,9 @@ private const val ISSUES_URL = "https://github.com/divsysx/Attendo/issues"
  * The "Report a bug or suggest an improvement" section: a row that opens the choice of
  * channels, and the two email intents behind it.
  *
- * Attendo has no backend and no account, so there is nothing in-app for feedback to travel
- * over — analytics is aggregate usage numbers only and deliberately carries no message
- * content. The email app is the channel that already exists on every phone, and a
+ * Feedback has no backend of its own — nothing in-app for a message to travel
+ * over (analytics is aggregate usage numbers only and deliberately carries no message
+ * content). The email app is the channel that already exists on every phone, and a
  * pre-filled message — subject and template included — costs the student nothing but the
  * details only they know. The subject says "Attendo" because an inbox full of "Bug
  * report" subject lines is one nobody can file.
@@ -93,7 +93,7 @@ private fun FeedbackDialog(
 }
 
 private fun bugReport(appVersion: String) = FeedbackEmail(
-    subject = "Attendo — Bug report",
+    subject = "Attendo bug report",
     body = "What happened?\n\n" +
         "What did you expect?\n\n" +
         "Steps to reproduce:\n\n" +
@@ -102,7 +102,7 @@ private fun bugReport(appVersion: String) = FeedbackEmail(
 )
 
 private fun suggestion(appVersion: String) = FeedbackEmail(
-    subject = "Attendo — Suggestion",
+    subject = "Attendo suggestion",
     body = "What would you like Attendo to improve or add?\n\n" +
         "Why would this be useful?\n\n" +
         "App version: $appVersion\n",
@@ -163,10 +163,27 @@ private fun Context.sendFeedbackEmail(email: FeedbackEmail) {
 internal val NO_MAIL_APP_MESSAGE: String =
     "No email app was found on this phone. You can open an issue on GitHub instead."
 
-private fun Context.openUrl(url: String) {
+/** What the student is told when a link cannot be opened because no browser answered. */
+internal val NO_BROWSER_MESSAGE: String =
+    "No app on this phone could open that link."
+
+/**
+ * Opens a URL in whatever the phone uses for links — the one way Attendo leaves itself for
+ * the web.
+ *
+ * It is `internal` because the About footer's project links open the same way: one helper,
+ * one intent, so a phone with no browser behaves the same wherever a link is tapped.
+ *
+ * Nothing is rendered in-app. A WebView would be a second browser to maintain and, on a
+ * page that asks for a GitHub login, a surface that can lie about where it is — the system
+ * browser keeps its own address bar and the student's own session.
+ */
+internal fun Context.openUrl(url: String) {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     } catch (_: ActivityNotFoundException) {
-        // No browser either. Same reasoning as above.
+        // A phone with no browser at all — rare, but a tap that silently does nothing reads
+        // as a broken row. Same reasoning as the email path above.
+        Toast.makeText(this, NO_BROWSER_MESSAGE, Toast.LENGTH_LONG).show()
     }
 }

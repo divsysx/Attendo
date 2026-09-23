@@ -21,6 +21,26 @@ object Routes {
     const val SETTINGS: String = "settings"
     const val BACKUP: String = "backup"
 
+    /** The install's account — its own screen, reached from Settings' compact row. */
+    const val ACCOUNT: String = "account"
+
+    /** The student's own community activity, opened from Settings. */
+    const val MY_COMMUNITY: String = "myCommunity"
+
+    /** Reporting identity backup/restore — its own screen, never part of the backup. */
+    const val REPORTING_IDENTITY: String = "reportingIdentity"
+
+    /**
+     * The three term-shape editors, each on its own screen.
+     *
+     * Settings shows a summary row for each and nothing more. The editors themselves are a
+     * picker and two date lists, and a Settings screen that grew all three inline would stop
+     * being a list of what the app can be asked to do and become a form.
+     */
+    const val TARGETS: String = "targets"
+    const val HOLIDAYS: String = "holidays"
+    const val WORKING_SATURDAYS: String = "workingSaturdays"
+
     const val DAY: String = "day/{${Arg.DATE}}"
     fun day(date: LocalDate): String = "day/$date"
 
